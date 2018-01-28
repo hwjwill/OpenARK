@@ -79,6 +79,11 @@ int main() {
     // main loop
     while (true)
     {
+		camera->nextFrame();
+		cv::namedWindow("Depth");
+		cv::imshow("Depth", camera->getDepthMap());
+		cv::namedWindow("Color");
+		cv::imshow("Color", camera->getRGBImage());
 		/*
         // go to next frame
         camera->nextFrame();

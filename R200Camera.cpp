@@ -25,9 +25,9 @@ namespace ark {
 		mColor_intrin = mpDev->get_stream_intrinsics(rs::stream::color);
 		mDepthScale = mpDev->get_depth_scale();
 
-		intrinsics = cv::Mat(3, 3, CV_32FC1);
+		intrinsics = cv::Mat::zeros(3, 3, CV_32FC1);
 		intrinsics.at<float>(0, 0) = mColor_intrin.fx;
-		intrinsics.at<float>(0, 1) = 0.1f; //Wrong, need change to s
+		intrinsics.at<float>(0, 1) = 0.0f; //Wrong, need change to s
 		intrinsics.at<float>(1, 1) = mColor_intrin.fy;
 		intrinsics.at<float>(0, 2) = mColor_intrin.ppx;
 		intrinsics.at<float>(1, 2) = mColor_intrin.ppy;
@@ -35,6 +35,11 @@ namespace ark {
 	}
 
 	R200Camera::~R200Camera() {}
+
+	bool R200Camera::nextFrame() {
+		update();
+		return true;
+	}
 
 	void R200Camera::update() {
 		initializeImages();

@@ -14,6 +14,9 @@ namespace ark {
 	public: 
 		R200Camera();
 		~R200Camera();
+
+		bool nextFrame();
+
 		void update() override;
 		/**
 		* Returns true if an RGB image is available from this camera.
