@@ -825,6 +825,17 @@ namespace ark {
             return result / (end - start + 1);
         }
 
+		cv::Point3f deproject(cv::Point2f pixelPoint, cv::Mat intrinsics, float depth) {
+			float x = (pixelPoint.x - intrinsics.at<float>(0, 2)) / intrinsics.at<float>(0, 0);
+			float y = (pixelPoint.y - intrinsics.at<float>(1, 2)) / intrinsics.at<float>(1, 1);
+			// Didn't take into account of distortions
+			cv::Point3f ThreeDLocation;
+			ThreeDLocation.x = x * depth;
+			ThreeDLocation.y = y * depth;
+			ThreeDLocation.z = depth;
+			return ThreeDLocation;
+		}
+
         bool PointComparer<Point2i>::operator()(Point2i a, Point2i b) {
             if (compare_y_then_x) {
                 if (a.y == b.y) return reverse ^ (a.x < b.x);

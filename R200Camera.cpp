@@ -21,6 +21,8 @@ namespace ark {
 		mpDev->enable_stream(rs::stream::depth, rs::preset::largest_image);
 		mpDev->start();
 		
+		mpDev->wait_for_frames();
+
 		mDepth_intrin = mpDev->get_stream_intrinsics(rs::stream::depth);
 		mColor_intrin = mpDev->get_stream_intrinsics(rs::stream::color);
 		mDepthScale = mpDev->get_depth_scale();
@@ -43,28 +45,35 @@ namespace ark {
 
 	void R200Camera::update() {
 		initializeImages();
-		mpDev->wait_for_frames();
+		try {
+			mpDev->wait_for_frames();
+		}
+		catch (const rs::error & e) {
+			// Method calls against librealsense objects may throw exceptions of type rs::error
+			printf("rs::error was thrown when calling %s(%s):\n", e.get_failed_function().c_str(), e.get_failed_args().c_str());
+			printf("    %s\n", e.what());
+		}
+		
 		fillInZCoords();
 		fillInRGBImg();
 	}
 
 	void R200Camera::fillInZCoords() {
 		uint16_t * depth_image = (uint16_t *)mpDev->get_frame_data(rs::stream::depth_aligned_to_rectified_color);
-		std::memcpy(&depthMap.datastart, depth_image, Y_DIMENSION * X_DIMENSION * sizeof(short));
+		std::memcpy((void*) depthMap.datastart, depth_image, Y_DIMENSION * X_DIMENSION * sizeof(short));
 		
 		// Populate xyzMap
 		for (int dy = 0; dy < Y_DIMENSION; ++dy) {
 			for (int dx = 0; dx < X_DIMENSION; ++dx) {
 				uint16_t depth_value = depth_image[dy * X_DIMENSION + dx];
-				rs::float3 depth_point = mColor_intrin.deproject({ (float)dx, (float)dy }, depth_value * mDepthScale); // May have issue with mDepthScale
-				xyzMap.at<cv::Vec3f>(dy, dx) = cv::Vec3f(depth_point.x, depth_point.y, depth_point.z);
+				xyzMap.at<cv::Vec3f>(dy, dx) = util::deproject(cv::Point2f(dx, dy), intrinsics, depth_value * mDepthScale);
 			}
 		}
 	}
 
 	void R200Camera::fillInRGBImg() {
 		uint8_t * color_image = (uint8_t *)mpDev->get_frame_data(rs::stream::rectified_color);
-		std::memcpy(&rgbImage.datastart, color_image, Y_DIMENSION * X_DIMENSION * 3 * sizeof(unsigned char));
+		std::memcpy((void*) rgbImage.datastart, color_image, Y_DIMENSION * X_DIMENSION * 3 * sizeof(unsigned char));
 	}
 
 	void R200Camera::initializeImages() {
