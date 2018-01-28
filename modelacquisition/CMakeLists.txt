@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project(ORB_SLAM2)
+project(MODEL_ACQUISITION)
 
 IF (NOT CMAKE_BUILD_TYPE)
     SET(CMAKE_BUILD_TYPE Release)
@@ -60,7 +60,7 @@ include_directories(
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 
 add_library(${PROJECT_NAME} SHARED
-        src/System.cc
+        src/ORBSLAMSystem.cpp
         src/Tracking.cc
         src/LocalMapping.cc
         src/LoopClosing.cc
@@ -79,7 +79,12 @@ add_library(${PROJECT_NAME} SHARED
         src/Sim3Solver.cc
         src/Initializer.cc
         src/Viewer.cc
-        src/FrameSelector.cpp include/FrameSelector.h src/OccupancyGrid.cpp include/OccupancyGrid.h include/Matrix.h include/SE3.h include/helper_math.h src/Octree.cpp include/Octree.h include/BridgeRSR200.h src/BridgeRSR200.cpp src/MeshGenerator.cpp include/MeshGenerator.h include/PointModelDrawer.h src/PointModelDrawer.cpp include/Segmentation.h)
+        src/FrameSelector.cpp
+        src/OccupancyGrid.cpp
+        src/Octree.cpp
+        src/MeshGenerator.cpp
+        src/PointModelDrawer.cpp
+        src/MeshGenerator.cpp)
 
 target_link_libraries(${PROJECT_NAME}
         ${OpenCV_LIBS}
@@ -94,19 +99,8 @@ target_link_libraries(${PROJECT_NAME}
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/RGB-D)
 
-add_executable(rgbd_tum
-        Examples/RGB-D/rgbd_tum.cc src/FrameSelector.cpp src/OccupancyGrid.cpp src/Octree.cpp src/BridgeRSR200.cpp src/PointModelDrawer.cpp)
-target_link_libraries(rgbd_tum
-        ${PROJECT_NAME}
-        ${PCL_LIBRARIES}
-        ${LIBUSB1_LIBRARIES}
-        ${OCTOMAP_LIBRARIES}
-        realsense
-        ${PROJECT_SOURCE_DIR}/Thirdparty/TSDF/lib/libtsdf_cuda.so
-        ${CUDA_LIBRARIES})
-
 add_executable(rgbd_realsense
-        src/MeshGenerator.cpp src/FrameSelector.cpp src/OccupancyGrid.cpp src/Octree.cpp Examples/RGB-D/rgbd_realsense.cpp src/BridgeRSR200.cpp src/PointModelDrawer.cpp include/Segmentation.h)
+         Examples/RGB-D/rgbd_realsense.cpp src/BridgeRSR200.cpp)
 target_link_libraries(rgbd_realsense
         ${PROJECT_NAME}
         ${PCL_LIBRARIES}

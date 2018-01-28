@@ -26,7 +26,7 @@
 namespace ORB_SLAM2
 {
 
-Viewer::Viewer(System* pSystem, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer, PointModelDrawer* pPointModelDrawer, Tracking *pTracking, const string &strSettingPath):
+Viewer::Viewer(ark::ORBSLAMSystem* pSystem, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer, PointModelDrawer* pPointModelDrawer, Tracking *pTracking, const string &strSettingPath):
     mpSystem(pSystem), mpFrameDrawer(pFrameDrawer),mpMapDrawer(pMapDrawer), mpTracker(pTracking), mpPointModelDrawer(pPointModelDrawer),
     mbFinishRequested(false), mbFinished(true), mbStopped(true), mbStopRequested(false)
 {

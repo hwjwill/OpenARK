@@ -36,6 +36,7 @@ modelacquisition/cmake-build-debug/
 modelacquisition/Thirdparty/DBoW2/build/
 modelacquisition/Thirdparty/g2o/build/
 modelacquisition/Thirdparty/TSDF/build/
+modelacquisition/lib/*.so
 # MSTest test Results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*

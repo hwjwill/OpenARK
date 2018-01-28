@@ -30,7 +30,7 @@
 #include <librealsense/rs.hpp>
 #include<opencv2/core/core.hpp>
 
-#include<System.h>
+#include<ORBSLAMSystem.h>
 #include<BridgeRSR200.h>
 #include<MeshGenerator.h>
 #include<Segmentation.h>
@@ -39,16 +39,15 @@ using namespace cv;
 using namespace std;
 typedef cv::Vec<uchar, 3> Vec3b;
 
-int main(int argc, char **argv)
-{
-    if(argc != 3)
-    {
+int main(int argc, char **argv) {
+    if (argc != 3) {
         cerr << endl << "Usage: ./rgbd_realsense path_to_vocabulary path_to_settings" << endl;
         return 1;
+    }
 
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::RGBD, true);
+    ark::ORBSLAMSystem SLAM(argv[1], argv[2], ark::ORBSLAMSystem::RGBD, true);
 
     // Start the R200 rgbd camera
     BridgeRSR200 bridgeRSR200;
@@ -56,17 +55,17 @@ int main(int argc, char **argv)
 
     // Main loop
     int tframe = 1;
-    while(!SLAM.IsStopRequested())
-    {
+    SLAM.Start();
+    while (!SLAM.IsRunning()) {
         cv::Mat imRGB, imD;
 
         bridgeRSR200.GrabRGBDPair(imRGB, imD);
 
         // Pass the image to the SLAM system
-        SLAM.TrackRGBD(imRGB, imD, tframe);
+        SLAM.PushFrame(imRGB, imD, tframe);
 
         // check map changed
-        if(SLAM.MapChanged()){
+        if (SLAM.MapChanged()) {
             std::cout << "map changed" << std::endl;
         }
 
@@ -74,7 +73,7 @@ int main(int argc, char **argv)
     }
     SLAM.SavePointCloud("tmp.pcd");
 //    SLAM.SaveOccupancyGrid("map.ot");
-    SLAM.Shutdown();
+    SLAM.ShutDown();
 
     Segmentaion segmentation;
     pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
@@ -82,13 +81,13 @@ int main(int argc, char **argv)
     segmentation.segment(cloud);
     std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> clusters = segmentation.getCluster();
 
-    for(int i=0;i<clusters.size();++i) {
+    for (int i = 0; i < clusters.size(); ++i) {
         cout << "Start Post-processing" << endl;
         cout << "Mesh Generation" << endl;
         string filepcd;
         stringstream ss;
-        ss<<"pc_"<<i<<".pcd";
-        ss>>filepcd;
+        ss << "pc_" << i << ".pcd";
+        ss >> filepcd;
         pcl::io::savePCDFileBinary(filepcd, *clusters[i]);
     }
 }
