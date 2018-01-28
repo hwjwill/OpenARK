@@ -60,7 +60,8 @@ endforeach()
 set(
   SOURCES 
   Object3D.cpp 
-  Hand.cpp Plane.cpp 
+  FrameObject.cpp SceneObject.cpp
+  Hand.cpp Plane.cpp Shape.cpp
   Webcam.cpp 
   DepthCamera.cpp 
   RGBCamera.cpp
@@ -70,6 +71,7 @@ set(
   Util.cpp	
   Visualizer.cpp	
   Converter.cpp
+  
 )
 
 if(NOT RSSDK_FOUND)
