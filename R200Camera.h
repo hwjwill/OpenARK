@@ -30,6 +30,7 @@ namespace ark {
 		* Gracefully closes the R200 camera.
 		*/
 		void destroyInstance();
+
 	private:
 		/**
 		* Initializat the camera
@@ -38,12 +39,11 @@ namespace ark {
 		void fillInZCoords();
 		void fillInRGBImg();
 		void initializeImages();
-		static const int REAL_WID = 480, REAL_HI = 320;
+		static const int REAL_WID = 640, REAL_HI = 480;
 		rs::context mCtx;
 		rs::device * mpDev;
 		rs::intrinsics mDepth_intrin;
 		rs::intrinsics mColor_intrin;
 		float mDepthScale;
-		int depth_width, depth_height, rgb_width, rgb_height;
 	};
 }

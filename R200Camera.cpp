@@ -25,10 +25,13 @@ namespace ark {
 		mColor_intrin = mpDev->get_stream_intrinsics(rs::stream::color);
 		mDepthScale = mpDev->get_depth_scale();
 
-		depth_width = mDepth_intrin.width;
-		depth_height = mDepth_intrin.height;
-		rgb_width = mColor_intrin.width;
-		rgb_height = mColor_intrin.height; // Can we confirm if rgb and depth dimension are always same?
+		intrinsics = cv::Mat(3, 3, CV_32FC1);
+		intrinsics.at<float>(0, 0) = mColor_intrin.fx;
+		intrinsics.at<float>(0, 1) = 0.1f; //Wrong, need change to s
+		intrinsics.at<float>(1, 1) = mColor_intrin.fy;
+		intrinsics.at<float>(0, 2) = mColor_intrin.ppx;
+		intrinsics.at<float>(1, 2) = mColor_intrin.ppy;
+		intrinsics.at<float>(2, 2) = 1.0f;
 	}
 
 	R200Camera::~R200Camera() {}
@@ -42,13 +45,13 @@ namespace ark {
 
 	void R200Camera::fillInZCoords() {
 		uint16_t * depth_image = (uint16_t *)mpDev->get_frame_data(rs::stream::depth_aligned_to_rectified_color);
-		// imD =  cv::Mat(mDepth_intrin.height, mDepth_intrin.width, CV_16SC1); // We may need to store depth map as well for SLAM
-
+		std::memcpy(&depthMap.datastart, depth_image, Y_DIMENSION * X_DIMENSION * sizeof(short));
+		
 		// Populate xyzMap
-		for (int dy = 0; dy < depth_height; ++dy) {
-			for (int dx = 0; dx < depth_width; ++dx) {
-				uint16_t depth_value = depth_image[dy * depth_width + dx];
-				rs::float3 depth_point = mDepth_intrin.deproject({ (float)dx, (float)dy }, depth_value * mDepthScale);
+		for (int dy = 0; dy < Y_DIMENSION; ++dy) {
+			for (int dx = 0; dx < X_DIMENSION; ++dx) {
+				uint16_t depth_value = depth_image[dy * X_DIMENSION + dx];
+				rs::float3 depth_point = mColor_intrin.deproject({ (float)dx, (float)dy }, depth_value * mDepthScale); // May have issue with mDepthScale
 				xyzMap.at<cv::Vec3f>(dy, dx) = cv::Vec3f(depth_point.x, depth_point.y, depth_point.z);
 			}
 		}
@@ -56,12 +59,13 @@ namespace ark {
 
 	void R200Camera::fillInRGBImg() {
 		uint8_t * color_image = (uint8_t *)mpDev->get_frame_data(rs::stream::rectified_color);
-		std::memcpy(&rgbImage.datastart, color_image, rgb_height * rgb_width * 3 * sizeof(unsigned char));
+		std::memcpy(&rgbImage.datastart, color_image, Y_DIMENSION * X_DIMENSION * 3 * sizeof(unsigned char));
 	}
 
 	void R200Camera::initializeImages() {
-		xyzMap = cv::Mat(depth_height, depth_width, CV_32FC3);
-		rgbImage = cv::Mat(rgb_height, rgb_width, CV_8UC3);
+		xyzMap = cv::Mat(Y_DIMENSION, X_DIMENSION, CV_32FC3);
+		rgbImage = cv::Mat(Y_DIMENSION, X_DIMENSION, CV_8UC3);
+		depthMap = cv::Mat(Y_DIMENSION, X_DIMENSION, CV_16SC1);
 	}
 
 	void R200Camera::destroyInstance() {
