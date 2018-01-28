@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
+
 project( OpenARK )
 
 set(CMAKE_CXX_STACK_SIZE "10000000")
@@ -10,13 +11,15 @@ include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
 if(COMPILER_SUPPORTS_CXX11)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 /EHsc")
 elseif(COMPILER_SUPPORTS_CXX0X)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x /EHsc")
 else()
     message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
 
+set(Boost_USE_STATIC_LIBS ON) 
+set(Boost_USE_STATIC ON)
 
 find_package( PCL REQUIRED )
 
@@ -71,13 +74,37 @@ set(
   Util.cpp	
   Visualizer.cpp	
   Converter.cpp
-  
+  HandFeatureExtractor.cpp
+  HandClassifier.cpp
+  libSVM/svm.cpp
+)
+
+set(
+  HEADERS 
+  Object3D.h
+  FrameObject.h SceneObject.h
+  ObjectParams.h
+  Hand.h Plane.h Shape.h
+  Webcam.h
+  DepthCamera.h 
+  RGBCamera.h
+  UDPSender.h 
+  StreamingAverager.h 
+  Calibration.h 
+  Util.h	
+  Visualizer.h	
+  Converter.h
+  stdafx.h
+  HandFeatureExtractor.h
+  HandClassifier.h
+  libSVM/svm.h
 )
 
 if(NOT RSSDK_FOUND)
   SET(RSSDK "//")
 else()
   set(SOURCES ${SOURCES} SR300Camera.cpp)
+  set(HEADERS ${HEADERS} SR300Camera.h)
 endif(NOT RSSDK_FOUND)
 
 if(NOT PMDSDK_FOUND)
@@ -85,13 +112,41 @@ if(NOT PMDSDK_FOUND)
 else()
   include_directories(${PMDSDK_INCLUDE_DIR})
   set(SOURCES ${SOURCES} PMDCamera.cpp)
+  set(HEADERS ${HEADERS} PMDCamera.h)
   set(DEPENDENCIES ${DEPENDENCIES} ${PMDSDK_LIBRARIES})
 endif(NOT PMDSDK_FOUND)
 
 configure_file(Version.h.in ${PROJECT_SOURCE_DIR}/version.h)
+set(HEADERS ${HEADERS} version.h)
 
+macro(add_msvc_pch PrecompiledHeader PrecompiledSource SourcesVar)
+  if(MSVC)
+    get_filename_component(PrecompiledBasename ${PrecompiledHeader} NAME_WE)
+    set(PrecompiledBinary "$(IntDir)/${PrecompiledBasename}.pch")
+    set(Sources ${${SourcesVar}})
 
-add_executable( OpenARK main.cpp ${SOURCES} )
+    if(NOT ${PrecompiledSource} STREQUAL "")
+        set(Sources ${Sources} main.cpp)
+        set_source_files_properties(${PrecompiledSource}
+                                    PROPERTIES COMPILE_FLAGS "/Yc\"${PrecompiledHeader}\" /Fp\"${PrecompiledBinary}\""
+                                               OBJECT_OUTPUTS "${PrecompiledBinary}")
+    endif(NOT ${PrecompiledSource} STREQUAL "")
+
+    set_source_files_properties(${Sources}
+                                PROPERTIES COMPILE_FLAGS "/Yu\"${PrecompiledHeader}\" /FI\"${PrecompiledHeader}\" /Fp\"${PrecompiledBinary}\""
+                                           OBJECT_DEPENDS "${PrecompiledBinary}")  
+    list(APPEND ${SourcesVar} ${PrecompiledSource})
+  endif(MSVC)
+endmacro(add_msvc_pch)
+
+if (MSVC)
+    add_msvc_pch("stdafx.h" "stdafx.cpp" SOURCES)
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+endif(MSVC)
+
+source_group("Header Files" *.h)
+
+add_executable( OpenARK main.cpp ${SOURCES} ${HEADERS})
 target_link_libraries( OpenARK ${DEPENDENCIES} )
 set_target_properties( OpenARK PROPERTIES
   COMPILE_FLAGS ${TARGET_COMPILE_FLAGS})
@@ -107,17 +162,20 @@ if(${BUILD_TESTS})
   #    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/OpenARK_test)
   endif(NOT EXISTS ${PROJECT_SOURCE_DIR}/OpenARK_test)
 
+  set(
+    TEST_SOURCES 
+    OpenARK_test/test.cpp
+    OpenARK_test/TestCamera.cpp
+  )
+
+  add_msvc_pch("../stdafx.h" "" TEST_SOURCES)
 
   add_executable( OpenARK_test OpenARK_test/test.cpp 
-    OpenARK_test/TestCamera.cpp ${SOURCES})
+    OpenARK_test/TestCamera.cpp ${SOURCES} OpenARK_test/TestCamera.h ${HEADERS})
   target_link_libraries( OpenARK_test ${DEPENDENCIES} )
   set_target_properties( OpenARK_test PROPERTIES
     COMPILE_FLAGS ${TARGET_COMPILE_FLAGS})
 endif(${BUILD_TESTS})
-
-
-
-
 
 
 

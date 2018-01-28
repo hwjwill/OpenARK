@@ -1,104 +1,102 @@
 #pragma once
-// C++ Libraries
-#include <vector>
+#include "stdafx.h"
+#include "version.h"
 
-// OpenCV Libraries
-#include <opencv2/core.hpp>
+namespace ark {
+    class Hand
+    {
+    public:
 
+        // Public constructors
 
+        /**
+        * Default constructor for a hand object
+        */
+        Hand();
 
+        /**
+        * Constructs a hand object from centroid, defect, and finger points
+        * @param xyzMap Input point cloud containing only the hand (nothing else can be in this point cluod)
+        * @param angle_treshhold Sharpest allowable angle formed by finger tip and neighboring defects
+        * @param cluster_thresh Maximum allowable distance between two finger tips
+        */
+        Hand(Vec3f centroid_xyz, Point2i centroid_ij,
+            std::vector<Vec3f> fingers_xyz, std::vector<Point2i> fingers_ij,
+            std::vector<Vec3f> defects_xyz, std::vector<Point2i> defects_ij,
+            double svm_confidence);
 
-class Hand
-{
-public:
+        /**
+        * Destructs the hand instance
+        */
+        ~Hand();
 
+        // Public variables
 
-	// Public constructors
-	/**
-	* Default constructor for a hand object
-	*/
-	Hand();
+        /**
+        * (x,y,z) position of the center of the hand
+        */
+        Vec3f center_xyz;
 
-	/**
-	* Constructs a hand object based on point cloud and constraints.
-	* @param xyzMap Input point cloud containing only the hand (nothing else can be in this point cluod)
-	* @param angle_treshhold Sharpest allowable angle formed by finger tip and neighboring defects
-	* @param cluster_thresh Maximum allowable distance between two finger tips
-	*/
-	Hand(cv::Mat xyzMap, float angle_treshhold, int cluster_thresh = 30);
+        /**
+        * (i,j) coordinates of the center of the hand
+        */
+        Point2i center_ij;
 
-	/**
-	* Deconstructor for the hand object
-	*/
-	~Hand();
+        /**
+        * (x,y,z) position of all detected finger tips
+        */
+        std::vector<Vec3f> fingers_xyz;
 
-	// Public variables
+        /**
+        * (i,j) coordinates of all detected finger tips
+        */
+        std::vector<Point2i> fingers_ij;
 
-	/**
-	* Maximum allowable distance between adjacent finger tips
-	*/
-	int CLUSTER_THRESHOLD;
+        /**
+        * (x,y,z) position of detected defects (bases of fingers)
+        */
+        std::vector<Vec3f> defects_xyz;
 
-	/**
-	* (x,y,z) position of all detected finger tips
-	*/
-	std::vector<cv::Vec3f> fingers_xyz;
+        /**
+        * (i,j) position of detected defects (bases of fingers)
+        */
+        std::vector<Point2i> defects_ij;
 
-	/**
-	* (i,j) coordinates of all detected finger tips
-	*/
-	std::vector<cv::Point2i> fingers_ij;
+        /**
+         * (x,y,z) coordinates of the sides of the wrist ([0] is left, [1] is right)
+         */
+        Vec3f wrist_xyz[2];
 
-	/**
-	* (x,y,z) position of hand centroid
-	*/
-	cv::Vec3f centroid_xyz;
+        /**
+         * (i,j) coordinates of the sides of the wrist ([0] is left, [1] is right)
+         */
+        Point2i wrist_ij[2];
 
-	/**
-	* (i,j) coordinates of hand centroid
-	*/
-	cv::Point2i centroid_ij;
+        /**
+         * radius of largest inscribed circle
+         */
+        double circle_radius;
 
-	/**
-	* (x,y,z) position of detected defects
-	*/
-	std::vector<cv::Vec3f> defects_xyz;
+        /**
+        * The confidence value (in [0, 1]) assigned to this hand by the SVM classifier,
+        * higher = more likely to be hand
+        */
+        double svm_confidence;
 
-	/**
-	* (i,j) position of detected defects
-	*/
-	std::vector<cv::Point2i> defects_ij;
+        // Public methods
 
-	// Public functions
+        /**
+        * Get the number of fingers on this hand
+        */
+        int numFingers() const;
 
-	/**
-	* Determine whether one of the fingers is in contact with a tracked object.
-	* @param equation Regression equation of the object
-	* @param threshold Thickness of the plane modeled by the regression equation
-	* @return TRUE if hand is contacting a tracked object. FALSE otherwise
-	*/
-	bool touchObject(std::vector<double> &equation, const double threshold);
+        /**
+        * Determine whether one of the fingers is in contact with a tracked object.
+        * @param equation Regression equation of the object
+        * @param threshold Thickness of the plane modeled by the regression equation
+        * @return TRUE if hand is contacting a tracked object. FALSE otherwise
+        */
+        bool touchObject(std::vector<double> &equation, const double threshold) const ;
 
-private:
-	// Private constructors
-	/**
-	* Find the contour with max number of vertices.
-	**/
-	static std::vector<cv::Point> findComplexContour(std::vector< std::vector<cv::Point> > contours);
-
-	/**
-	* Groups vertices within a threshold and selects the median of each group.
-	**/
-	std::vector<cv::Point> clusterConvexHull(std::vector<cv::Point> convexHull, int threshold) const;
-
-	/**
-	* Find the centroid of contour using 0th and 1st degree moments
-	**/
-	static cv::Point findCenter(std::vector<cv::Point> contour);
-
-	// Private variables
-	float ANGLE_THRESHHOLD;
-
-	// Private functions
-	void analyzeHand(cv::Mat xyzMap);
-};
+    };
+}
