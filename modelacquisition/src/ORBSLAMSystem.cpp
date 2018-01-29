@@ -7,10 +7,18 @@
 namespace ark {
 
     ORBSLAMSystem::ORBSLAMSystem(const string &strVocFile, const string &strSettingsFile, const eSensor sensor,
-                                 const bool bUseViewer) : mSensor(sensor),
-                                                          mpViewer(static_cast<ORB_SLAM2::Viewer *>(NULL)),
-                                                          mbReset(false), mbActivateLocalizationMode(false),
-                                                          mbDeactivateLocalizationMode(false) {
+                                 const bool bUseViewer) :
+            mStrVocFile(strVocFile),
+            mStrSettingsFile(strSettingsFile),
+            mSensor(sensor),
+            mbUseViewer(bUseViewer),
+            mpViewer(static_cast<ORB_SLAM2::Viewer *>(NULL)),
+            mbReset(false), mbActivateLocalizationMode(false),
+            mbDeactivateLocalizationMode(false) {
+    }
+
+    void ORBSLAMSystem::Start() {
+
         // Output welcome message
         cout << endl <<
              "ORB-SLAM2 Copyright (C) 2014-2016 Raul Mur-Artal, University of Zaragoza." << endl <<
@@ -28,9 +36,9 @@ namespace ark {
             cout << "RGB-D" << endl;
 
         //Check settings file
-        cv::FileStorage fsSettings(strSettingsFile.c_str(), cv::FileStorage::READ);
+        cv::FileStorage fsSettings(mStrSettingsFile, cv::FileStorage::READ);
         if (!fsSettings.isOpened()) {
-            cerr << "Failed to open settings file at: " << strSettingsFile << endl;
+            cerr << "Failed to open settings file at: " << mStrSettingsFile << endl;
             exit(-1);
         }
 
@@ -39,10 +47,10 @@ namespace ark {
         cout << endl << "Loading ORB Vocabulary. This could take a while..." << endl;
 
         mpVocabulary = new ORB_SLAM2::ORBVocabulary();
-        bool bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
+        bool bVocLoad = mpVocabulary->loadFromTextFile(mStrVocFile);
         if (!bVocLoad) {
             cerr << "Wrong path to vocabulary. " << endl;
-            cerr << "Falied to open at: " << strVocFile << endl;
+            cerr << "Falied to open at: " << mStrVocFile << endl;
             exit(-1);
         }
         cout << "Vocabulary loaded!" << endl << endl;
@@ -55,34 +63,35 @@ namespace ark {
 
         //Create Drawers. These are used by the Viewer
         mpFrameDrawer = new ORB_SLAM2::FrameDrawer(mpMap);
-        mpMapDrawer = new ORB_SLAM2::MapDrawer(mpMap, strSettingsFile);
+        mpMapDrawer = new ORB_SLAM2::MapDrawer(mpMap, mStrSettingsFile);
         mpPointModelDrawer = new ORB_SLAM2::PointModelDrawer();
 
         mpFrameSelector = new ORB_SLAM2::FrameSelector(mpMap);
 
         //Initialize the Tracking thread
         //(it will live in the main thread of execution, the one that called this constructor)
-        mpTracker = new ORB_SLAM2::Tracking(this, mpVocabulary, mpFrameDrawer, mpMapDrawer, mpFrameSelector,
-                                            mpMap, mpKeyFrameDatabase, strSettingsFile, mSensor);
+        mpTracker = new ORB_SLAM2::Tracking(this, mKeyFrameAvailableHandler, mFrameAvailableHandler, mpVocabulary,
+                                            mpFrameDrawer, mpMapDrawer, mpFrameSelector,
+                                            mpMap, mpKeyFrameDatabase, mStrSettingsFile, mSensor);
 
         //Initialize the Local Mapping thread and launch
         mpLocalMapper = new ORB_SLAM2::LocalMapping(mpMap, mSensor == MONOCULAR);
-
+        mptLocalMapping = new thread(&ORB_SLAM2::LocalMapping::Run, mpLocalMapper);
 
         //Initialize the Loop Closing thread and launch
         mpLoopCloser = new ORB_SLAM2::LoopClosing(mpMap, mpKeyFrameDatabase, mpVocabulary, mSensor != MONOCULAR);
-
+        mptLoopClosing = new thread(&ORB_SLAM2::LoopClosing::Run, mpLoopCloser);
 
         //Initialize the Occupancy Grid thread and launch
-        mpOccupancyGrid = new ORB_SLAM2::OccupancyGrid(mpFrameSelector, mpPointModelDrawer, strSettingsFile);
-
+        mpOccupancyGrid = new ORB_SLAM2::OccupancyGrid(mpFrameSelector, mpPointModelDrawer, mStrSettingsFile);
+        mptOccupancyGrid = new thread(&ORB_SLAM2::OccupancyGrid::Run, mpOccupancyGrid);
 
         //Initialize the Viewer thread and launch
-        if (bUseViewer) {
+        if (mbUseViewer) {
             mpViewer = new ORB_SLAM2::Viewer(this, mpFrameDrawer, mpMapDrawer, mpPointModelDrawer, mpTracker,
-                                             strSettingsFile);
+                                             mStrSettingsFile);
+            mptViewer = new thread(&ORB_SLAM2::Viewer::Run, mpViewer);
             mpTracker->SetViewer(mpViewer);
-            mbUseViewer = bUseViewer;
         }
 
         //Set pointers between threads
@@ -94,15 +103,7 @@ namespace ark {
 
         mpLoopCloser->SetTracker(mpTracker);
         mpLoopCloser->SetLocalMapper(mpLocalMapper);
-    }
 
-    void ORBSLAMSystem::Start() {
-        mptLocalMapping = new thread(&ORB_SLAM2::LocalMapping::Run, mpLocalMapper);
-        mptLoopClosing = new thread(&ORB_SLAM2::LoopClosing::Run, mpLoopCloser);
-        mptOccupancyGrid = new thread(&ORB_SLAM2::OccupancyGrid::Run, mpOccupancyGrid);
-        if (mbUseViewer) {
-            mptViewer = new thread(&ORB_SLAM2::Viewer::Run, mpViewer);
-        }
         {
             unique_lock<mutex> lock(mMutexRequestStop);
             mbRequestStop = false;

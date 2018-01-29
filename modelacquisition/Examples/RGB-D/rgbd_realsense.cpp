@@ -23,17 +23,18 @@
 */
 
 
-#include<iostream>
-#include<algorithm>
-#include<fstream>
-#include<chrono>
+#include <iostream>
+#include <algorithm>
+#include <fstream>
+#include <chrono>
 #include <librealsense/rs.hpp>
-#include<opencv2/core/core.hpp>
+#include <opencv2/core/core.hpp>
 
-#include<ORBSLAMSystem.h>
-#include<BridgeRSR200.h>
-#include<MeshGenerator.h>
-#include<Segmentation.h>
+#include <ORBSLAMSystem.h>
+#include <BridgeRSR200.h>
+#include <MeshGenerator.h>
+#include <Segmentation.h>
+#include <PointCloudGenerator.h>
 
 using namespace cv;
 using namespace std;
@@ -47,7 +48,15 @@ int main(int argc, char **argv) {
 
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    ark::ORBSLAMSystem SLAM(argv[1], argv[2], ark::ORBSLAMSystem::RGBD, true);
+    ark::PointCloudGenerator pointCloudGenerator;
+    ark::ORBSLAMSystem slam(argv[1], argv[2], ark::ORBSLAMSystem::RGBD, true);
+
+//    slam.SetKeyFrameAvailableHandler([&pointCloudGenerator](const ark::RGBDFrame& keyFrame){return pointCloudGenerator.OnKeyFrameAvailable(keyFrame);});
+//    slam.SetFrameAvailableHandler([&pointCloudGenerator](const ark::RGBDFrame& frame){return pointCloudGenerator.OnFrameAvailable(frame);});
+
+    slam.SetKeyFrameAvailableHandler([&pointCloudGenerator](int i){return pointCloudGenerator.OnKeyFrameAvailable(i);});
+    slam.SetFrameAvailableHandler([&pointCloudGenerator](int i){return pointCloudGenerator.OnFrameAvailable(i);});
+    slam.Start();
 
     // Start the R200 rgbd camera
     BridgeRSR200 bridgeRSR200;
@@ -55,25 +64,25 @@ int main(int argc, char **argv) {
 
     // Main loop
     int tframe = 1;
-    SLAM.Start();
-    while (!SLAM.IsRunning()) {
+
+    while (!slam.IsRunning()) {
         cv::Mat imRGB, imD;
 
         bridgeRSR200.GrabRGBDPair(imRGB, imD);
 
         // Pass the image to the SLAM system
-        SLAM.PushFrame(imRGB, imD, tframe);
+        slam.PushFrame(imRGB, imD, tframe);
 
         // check map changed
-        if (SLAM.MapChanged()) {
+        if (slam.MapChanged()) {
             std::cout << "map changed" << std::endl;
         }
 
         tframe++;
     }
-    SLAM.SavePointCloud("tmp.pcd");
+    slam.SavePointCloud("tmp.pcd");
 //    SLAM.SaveOccupancyGrid("map.ot");
-    SLAM.ShutDown();
+    slam.ShutDown();
 
     Segmentaion segmentation;
     pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGBA>);

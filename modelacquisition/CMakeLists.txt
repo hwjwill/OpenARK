@@ -7,8 +7,8 @@ ENDIF ()
 
 MESSAGE("Build type: " ${CMAKE_BUILD_TYPE})
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall  -O3 -march=native ")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3 -march=native")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall  -O1 -march=native ")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O1 -march=native")
 
 # Check C++11 or C++0x support
 include(CheckCXXCompilerFlag)
@@ -84,7 +84,7 @@ add_library(${PROJECT_NAME} SHARED
         src/Octree.cpp
         src/MeshGenerator.cpp
         src/PointModelDrawer.cpp
-        src/MeshGenerator.cpp)
+        src/MeshGenerator.cpp src/PointCloudGenerator.cpp include/Utils.h)
 
 target_link_libraries(${PROJECT_NAME}
         ${OpenCV_LIBS}

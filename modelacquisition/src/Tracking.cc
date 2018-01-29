@@ -36,6 +36,7 @@
 #include<iostream>
 
 #include<mutex>
+#include <include/Utils.h>
 
 
 using namespace std;
@@ -43,8 +44,10 @@ using namespace std;
 namespace ORB_SLAM2
 {
 
-Tracking::Tracking(ark::ORBSLAMSystem *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer,
+Tracking::Tracking(ark::ORBSLAMSystem *pSys, ark::KeyFrameAvailableHandler keyFrameHandler,
+                   ark::FrameAvailableHandler frameHandler, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer,
                    FrameSelector* pFrameSelector, Map *pMap, KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor):
+    mKeyFrameAvailableHandler(keyFrameHandler), mFrameAvailableHandler(frameHandler),
     mState(NO_IMAGES_YET), mSensor(sensor), mbOnlyTracking(false), mbVO(false), mpORBVocabulary(pVoc),
     mpKeyFrameDB(pKFDB), mpInitializer(static_cast<Initializer*>(NULL)), mpSystem(pSys), mpViewer(NULL),
     mpFrameDrawer(pFrameDrawer), mpMapDrawer(pMapDrawer),mpFrameSelector(pFrameSelector), mpMap(pMap), mnLastRelocFrameId(0)
@@ -77,6 +80,8 @@ Tracking::Tracking(ark::ORBSLAMSystem *pSys, ORBVocabulary* pVoc, FrameDrawer *p
     }
     DistCoef.copyTo(mDistCoef);
 
+    mnId = 0;
+    mnKeyId = 0;
     mbf = fSettings["Camera.bf"];
 
     float fps = fSettings["Camera.fps"];
@@ -503,7 +508,35 @@ void Tracking::Track()
         mlFrameTimes.push_back(mlFrameTimes.back());
         mlbLost.push_back(mState==LOST);
     }
-    mpFrameSelector->Update(this);
+
+    if(mLastProcessedState != Tracking::OK
+       ||!mCurrentFrame.mpReferenceKF->mbBA
+       ||mCurrentFrame.mpReferenceKF->isBad()){
+        return;
+    }
+
+
+    if(mCurrentFrame.mnId != mnId) {
+        ark::RGBDFrame frame;
+        frame.frameId = mCurrentFrame.mnId;
+        frame.imDepth = mCurrentFrame.mImDepth;
+        frame.imRGB = mCurrentFrame.mImColor;
+        frame.imRGB = mCurrentFrame.mTcw;
+        mnId = mCurrentFrame.mnId;
+        mFrameAvailableHandler(mnId);
+//        cv::imshow("Frame",mCurrentFrame.mImColor);
+    }
+
+    if(mCurrentFrame.mpReferenceKF->mnId != mnKeyId){
+        ark::RGBDFrame keyFrame;
+        keyFrame.frameId = mCurrentFrame.mpReferenceKF->mnId;
+        keyFrame.imDepth = mCurrentFrame.mpReferenceKF->mImDepth;
+        keyFrame.imRGB = mCurrentFrame.mpReferenceKF->mImColor;
+        keyFrame.imRGB = mCurrentFrame.mpReferenceKF->GetPose();
+        mnKeyId = mCurrentFrame.mpReferenceKF->mnId;
+        mKeyFrameAvailableHandler(mnKeyId);
+//        cv::imshow("KeyFrame",mCurrentFrame.mpReferenceKF->mImColor);
+    }
 }
 
 

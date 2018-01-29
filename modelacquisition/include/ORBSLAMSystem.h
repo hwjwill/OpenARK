@@ -71,6 +71,10 @@ namespace ark {
         void SaveOccupancyGrid(string filename);
 
     private:
+        //Location of vocabulary file and settings file
+        string mStrVocFile;
+
+        string mStrSettingsFile;
 
         // Input sensor
         eSensor mSensor;

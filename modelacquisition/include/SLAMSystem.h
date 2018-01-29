@@ -8,13 +8,14 @@
 #include <functional>
 #include <iostream>
 #include <opencv2/opencv.hpp>
+#include "Utils.h"
 
 
 namespace ark {
 
     typedef std::function<void(int)> KeyFrameAvailableHandler;
     typedef std::function<void(int)> FrameAvailableHandler;
-    typedef std::function<void(int)> LoopClosureDetectedHandler;
+    typedef std::function<void(void)> LoopClosureDetectedHandler;
 
     class SLAMSystem {
     public:
@@ -43,7 +44,7 @@ namespace ark {
 
         virtual ~SLAMSystem() = default;
 
-    private:
+    protected:
         KeyFrameAvailableHandler mKeyFrameAvailableHandler;
         FrameAvailableHandler mFrameAvailableHandler;
         LoopClosureDetectedHandler mLoopClosureHandler;

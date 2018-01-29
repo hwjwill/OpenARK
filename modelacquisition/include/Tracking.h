@@ -62,7 +62,9 @@ namespace ORB_SLAM2 {
     class Tracking {
 
     public:
-        Tracking(ark::ORBSLAMSystem *pSys, ORBVocabulary *pVoc, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer,
+        Tracking(ark::ORBSLAMSystem *pSys, ark::KeyFrameAvailableHandler keyFrameHandler,
+                 ark::FrameAvailableHandler frameHandler,
+                 ORBVocabulary *pVoc, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer,
                  FrameSelector *pFrameSelector, Map *pMap, KeyFrameDatabase *pKFDB, const string &strSettingPath,
                  const int sensor);
 
@@ -170,6 +172,13 @@ namespace ORB_SLAM2 {
         // In that case we are doing visual odometry. The system will try to do relocalization to recover
         // "zero-drift" localization to the map.
         bool mbVO;
+
+        //Callback handlers
+        ark::KeyFrameAvailableHandler mKeyFrameAvailableHandler;
+        ark::FrameAvailableHandler mFrameAvailableHandler;
+
+        //Current frame and keyFrame id
+        long mnId, mnKeyId;
 
         //Other Thread Pointers
         LocalMapping *mpLocalMapper;
