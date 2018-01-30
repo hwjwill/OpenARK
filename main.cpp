@@ -9,6 +9,9 @@
     #include "SR300Camera.h"
 #endif
 
+//Hack
+#include "R200Camera.h"
+
 #include "Webcam.h"
 #include "Visualizer.h"
 #include "Hand.h"
@@ -53,16 +56,20 @@ int main() {
     }
 #endif
 #ifdef RSSDK_ENABLED
+	/*
     if (!strcmp(OPENARK_CAMERA_TYPE, "sr300")) {
         camera = new SR300Camera();
     }
     else {
         return -1;
-    }
+    }*/
 #endif
+	//HACK
+	camera = new R200Camera();
+
     // seed rng
     srand(time(NULL));
-
+	
     // store frame & FPS information
     int frame = 0;
     clock_t cycleStartTime = 0;
@@ -72,6 +79,12 @@ int main() {
     // main loop
     while (true)
     {
+		camera->nextFrame();
+		cv::namedWindow("Depth");
+		cv::imshow("Depth", camera->getDepthMap());
+		cv::namedWindow("Color");
+		cv::imshow("Color", camera->getRGBImage());
+		/*
         // go to next frame
         camera->nextFrame();
 
@@ -184,6 +197,13 @@ int main() {
 
         cv::namedWindow("OpenARK Hand Detection");
         cv::imshow("OpenARK Hand Detection", handVisual);
+		*/
+
+
+
+		
+		
+		
 
         /**** Start: Loop Break Condition ****/
         int c = cv::waitKey(1);

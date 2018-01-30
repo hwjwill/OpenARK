@@ -208,6 +208,10 @@ namespace ark {
         return flagMap;
     }
 
+	const cv::Mat DepthCamera::getDepthMap() const {
+		return depthMap;
+	}
+
     std::vector<cv::Mat> DepthCamera::getClusters() const
     {
         return clusters;
@@ -217,6 +221,15 @@ namespace ark {
     {
         return clusterAreas;
     }
+
+	const cv::Mat DepthCamera::getIntrinsics() const {
+		return intrinsics;
+	}
+
+	long int DepthCamera::getTimeStamp() const
+	{
+		return static_cast<long int> (time(NULL));
+	}
 
     void DepthCamera::initializeImages()
     {
