@@ -119,7 +119,7 @@ namespace ark {
 	}
 
 	void Shape::exportToPly(std::string output_file_name) {
-		ofstream ply_file;
+		std::ofstream ply_file;
 		ply_file.open(output_file_name);
 		ply_file << "ply\nformat ascii 1.0\ncomment stanford bunny\nelement vertex ";
 		ply_file << vertices.size() << "\n";
