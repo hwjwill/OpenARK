@@ -46,11 +46,11 @@ namespace ORB_SLAM2
 
 Tracking::Tracking(ark::ORBSLAMSystem *pSys, ark::KeyFrameAvailableHandler keyFrameHandler,
                    ark::FrameAvailableHandler frameHandler, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer,
-                   FrameSelector* pFrameSelector, Map *pMap, KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor):
+                   Map *pMap, KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor):
     mKeyFrameAvailableHandler(keyFrameHandler), mFrameAvailableHandler(frameHandler),
     mState(NO_IMAGES_YET), mSensor(sensor), mbOnlyTracking(false), mbVO(false), mpORBVocabulary(pVoc),
     mpKeyFrameDB(pKFDB), mpInitializer(static_cast<Initializer*>(NULL)), mpSystem(pSys), mpViewer(NULL),
-    mpFrameDrawer(pFrameDrawer), mpMapDrawer(pMapDrawer),mpFrameSelector(pFrameSelector), mpMap(pMap), mnLastRelocFrameId(0)
+    mpFrameDrawer(pFrameDrawer), mpMapDrawer(pMapDrawer), mpMap(pMap), mnLastRelocFrameId(0)
 {
     // Load camera parameters from settings file
 
@@ -509,32 +509,40 @@ void Tracking::Track()
         mlbLost.push_back(mState==LOST);
     }
 
-    if(mLastProcessedState != Tracking::OK
-       ||!mCurrentFrame.mpReferenceKF->mbBA
-       ||mCurrentFrame.mpReferenceKF->isBad()){
+    if(mLastProcessedState != Tracking::OK){
         return;
     }
 
 
-    if(mCurrentFrame.mnId != mnId) {
-        ark::RGBDFrame frame;
-        frame.frameId = mCurrentFrame.mnId;
-        frame.imDepth = mCurrentFrame.mImDepth;
-        frame.imRGB = mCurrentFrame.mImColor;
-        frame.imRGB = mCurrentFrame.mTcw;
-        mnId = mCurrentFrame.mnId;
-        mFrameAvailableHandler(mnId);
-//        cv::imshow("Frame",mCurrentFrame.mImColor);
+//    if(mCurrentFrame.mnId != mnId) {
+//        ark::RGBDFrame frame;
+//        frame.frameId = mCurrentFrame.mnId;
+//        frame.imDepth = mCurrentFrame.mImDepth;
+//        frame.imRGB = mCurrentFrame.mImColor;
+//        frame.mTcw = mCurrentFrame.mTcw;
+//        mnId = mCurrentFrame.mnId;
+//        mFrameAvailableHandler(frame);
+////        cv::imshow("Frame",mCurrentFrame.mImColor);
+//    }
+
+    if(!mCurrentFrame.mpReferenceKF->mbBA){
+        std::cout << "not local mapping optimatize, drop" << std::endl;
+        return;
     }
 
-    if(mCurrentFrame.mpReferenceKF->mnId != mnKeyId){
+    if(mCurrentFrame.mpReferenceKF->isBad()) {
+        std::cout << "is bad " << std::endl;
+        return;
+    }
+
+    if(mCurrentFrame.mpReferenceKF->mnId){
         ark::RGBDFrame keyFrame;
         keyFrame.frameId = mCurrentFrame.mpReferenceKF->mnId;
         keyFrame.imDepth = mCurrentFrame.mpReferenceKF->mImDepth;
         keyFrame.imRGB = mCurrentFrame.mpReferenceKF->mImColor;
-        keyFrame.imRGB = mCurrentFrame.mpReferenceKF->GetPose();
+        keyFrame.mTcw = mCurrentFrame.mpReferenceKF->GetPose();
         mnKeyId = mCurrentFrame.mpReferenceKF->mnId;
-        mKeyFrameAvailableHandler(mnKeyId);
+        mKeyFrameAvailableHandler(keyFrame);
 //        cv::imshow("KeyFrame",mCurrentFrame.mpReferenceKF->mImColor);
     }
 }

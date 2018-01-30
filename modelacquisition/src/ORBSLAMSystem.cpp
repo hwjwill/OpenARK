@@ -64,15 +64,11 @@ namespace ark {
         //Create Drawers. These are used by the Viewer
         mpFrameDrawer = new ORB_SLAM2::FrameDrawer(mpMap);
         mpMapDrawer = new ORB_SLAM2::MapDrawer(mpMap, mStrSettingsFile);
-        mpPointModelDrawer = new ORB_SLAM2::PointModelDrawer();
-
-        mpFrameSelector = new ORB_SLAM2::FrameSelector(mpMap);
 
         //Initialize the Tracking thread
         //(it will live in the main thread of execution, the one that called this constructor)
         mpTracker = new ORB_SLAM2::Tracking(this, mKeyFrameAvailableHandler, mFrameAvailableHandler, mpVocabulary,
-                                            mpFrameDrawer, mpMapDrawer, mpFrameSelector,
-                                            mpMap, mpKeyFrameDatabase, mStrSettingsFile, mSensor);
+                                            mpFrameDrawer, mpMapDrawer, mpMap, mpKeyFrameDatabase, mStrSettingsFile, mSensor);
 
         //Initialize the Local Mapping thread and launch
         mpLocalMapper = new ORB_SLAM2::LocalMapping(mpMap, mSensor == MONOCULAR);
@@ -82,13 +78,9 @@ namespace ark {
         mpLoopCloser = new ORB_SLAM2::LoopClosing(mpMap, mpKeyFrameDatabase, mpVocabulary, mSensor != MONOCULAR);
         mptLoopClosing = new thread(&ORB_SLAM2::LoopClosing::Run, mpLoopCloser);
 
-        //Initialize the Occupancy Grid thread and launch
-        mpOccupancyGrid = new ORB_SLAM2::OccupancyGrid(mpFrameSelector, mpPointModelDrawer, mStrSettingsFile);
-        mptOccupancyGrid = new thread(&ORB_SLAM2::OccupancyGrid::Run, mpOccupancyGrid);
-
         //Initialize the Viewer thread and launch
         if (mbUseViewer) {
-            mpViewer = new ORB_SLAM2::Viewer(this, mpFrameDrawer, mpMapDrawer, mpPointModelDrawer, mpTracker,
+            mpViewer = new ORB_SLAM2::Viewer(this, mpFrameDrawer, mpMapDrawer, mpTracker,
                                              mStrSettingsFile);
             mptViewer = new thread(&ORB_SLAM2::Viewer::Run, mpViewer);
             mpTracker->SetViewer(mpViewer);
@@ -113,7 +105,6 @@ namespace ark {
     void ORBSLAMSystem::ShutDown() {
         mpLocalMapper->RequestFinish();
         mpLoopCloser->RequestFinish();
-        mpOccupancyGrid->RequestFinish();
 
         if (mpViewer) {
             mpViewer->RequestFinish();
@@ -211,11 +202,11 @@ namespace ark {
     }
 
     void ORBSLAMSystem::SavePointCloud(string filename) {
-        mpOccupancyGrid->savePointCloud(filename);
+
     }
 
     void ORBSLAMSystem::SaveOccupancyGrid(string filename) {
-        mpOccupancyGrid->saveOccupancyGrid(filename);
+
     }
 
 }

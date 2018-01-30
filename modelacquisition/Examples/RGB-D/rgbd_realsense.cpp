@@ -32,8 +32,6 @@
 
 #include <ORBSLAMSystem.h>
 #include <BridgeRSR200.h>
-#include <MeshGenerator.h>
-#include <Segmentation.h>
 #include <PointCloudGenerator.h>
 
 using namespace cv;
@@ -48,18 +46,15 @@ int main(int argc, char **argv) {
 
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    ark::PointCloudGenerator pointCloudGenerator;
-    ark::ORBSLAMSystem slam(argv[1], argv[2], ark::ORBSLAMSystem::RGBD, true);
-
-//    slam.SetKeyFrameAvailableHandler([&pointCloudGenerator](const ark::RGBDFrame& keyFrame){return pointCloudGenerator.OnKeyFrameAvailable(keyFrame);});
-//    slam.SetFrameAvailableHandler([&pointCloudGenerator](const ark::RGBDFrame& frame){return pointCloudGenerator.OnFrameAvailable(frame);});
-
-    slam.SetKeyFrameAvailableHandler([&pointCloudGenerator](int i){return pointCloudGenerator.OnKeyFrameAvailable(i);});
-    slam.SetFrameAvailableHandler([&pointCloudGenerator](int i){return pointCloudGenerator.OnFrameAvailable(i);});
-    slam.Start();
-
-    // Start the R200 rgbd camera
+    ark::PointCloudGenerator pointCloudGenerator(argv[2]);
+    ark::ORBSLAMSystem slam(argv[1], argv[2], ark::ORBSLAMSystem::RGBD, false);
     BridgeRSR200 bridgeRSR200;
+
+    slam.SetKeyFrameAvailableHandler([&pointCloudGenerator](const ark::RGBDFrame& keyFrame){return pointCloudGenerator.OnKeyFrameAvailable(keyFrame);});
+    slam.SetFrameAvailableHandler([&pointCloudGenerator](const ark::RGBDFrame& frame){return pointCloudGenerator.OnFrameAvailable(frame);});
+
+    slam.Start();
+    pointCloudGenerator.Start();
     bridgeRSR200.Start();
 
     // Main loop
@@ -78,25 +73,15 @@ int main(int argc, char **argv) {
             std::cout << "map changed" << std::endl;
         }
 
-        tframe++;
+        if(tframe++==500)
+        {
+            slam.RequestStop();
+            pointCloudGenerator.RequestStop();
+        }
     }
-    slam.SavePointCloud("tmp.pcd");
-//    SLAM.SaveOccupancyGrid("map.ot");
+
+    pointCloudGenerator.SavePointCloud("tmp.pcd");
+
     slam.ShutDown();
-
-    Segmentaion segmentation;
-    pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
-    segmentation.readPcd("tmp.pcd", cloud);
-    segmentation.segment(cloud);
-    std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> clusters = segmentation.getCluster();
-
-    for (int i = 0; i < clusters.size(); ++i) {
-        cout << "Start Post-processing" << endl;
-        cout << "Mesh Generation" << endl;
-        string filepcd;
-        stringstream ss;
-        ss << "pc_" << i << ".pcd";
-        ss >> filepcd;
-        pcl::io::savePCDFileBinary(filepcd, *clusters[i]);
-    }
+    pointCloudGenerator.ShutDown();
 }

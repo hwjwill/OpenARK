@@ -79,12 +79,8 @@ add_library(${PROJECT_NAME} SHARED
         src/Sim3Solver.cc
         src/Initializer.cc
         src/Viewer.cc
-        src/FrameSelector.cpp
-        src/OccupancyGrid.cpp
         src/Octree.cpp
-        src/MeshGenerator.cpp
-        src/PointModelDrawer.cpp
-        src/MeshGenerator.cpp src/PointCloudGenerator.cpp include/Utils.h)
+        src/PointCloudGenerator.cpp)
 
 target_link_libraries(${PROJECT_NAME}
         ${OpenCV_LIBS}
@@ -100,7 +96,8 @@ target_link_libraries(${PROJECT_NAME}
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/RGB-D)
 
 add_executable(rgbd_realsense
-         Examples/RGB-D/rgbd_realsense.cpp src/BridgeRSR200.cpp)
+        Examples/RGB-D/rgbd_realsense.cpp
+        src/BridgeRSR200.cpp)
 target_link_libraries(rgbd_realsense
         ${PROJECT_NAME}
         ${PCL_LIBRARIES}

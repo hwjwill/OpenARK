@@ -14,11 +14,8 @@
 #include "Map.h"
 #include "LocalMapping.h"
 #include "LoopClosing.h"
-#include "FrameSelector.h"
 #include "KeyFrameDatabase.h"
 #include "ORBVocabulary.h"
-#include "OccupancyGrid.h"
-#include "PointModelDrawer.h"
 
 namespace ORB_SLAM2{
     class Viewer;
@@ -103,15 +100,11 @@ namespace ark {
         // The viewer draws the map and the current camera pose. It uses Pangolin.
         ORB_SLAM2::Viewer* mpViewer;
 
-        // Frame Selector that buffers the most recent keyframe for reconstruction pipeline
-        ORB_SLAM2::FrameSelector *mpFrameSelector;
-
         // OccupancyGrid Generator
         ORB_SLAM2::OccupancyGrid *mpOccupancyGrid;
 
         ORB_SLAM2::FrameDrawer* mpFrameDrawer;
         ORB_SLAM2::MapDrawer* mpMapDrawer;
-        ORB_SLAM2::PointModelDrawer* mpPointModelDrawer;
 
         // System threads: Local Mapping, Loop Closing, Viewer.
         // The Tracking thread "lives" in the main execution thread that creates the System object.

@@ -13,8 +13,8 @@
 
 namespace ark {
 
-    typedef std::function<void(int)> KeyFrameAvailableHandler;
-    typedef std::function<void(int)> FrameAvailableHandler;
+    typedef std::function<void(const RGBDFrame &)> KeyFrameAvailableHandler;
+    typedef std::function<void(const RGBDFrame &)> FrameAvailableHandler;
     typedef std::function<void(void)> LoopClosureDetectedHandler;
 
     class SLAMSystem {

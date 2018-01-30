@@ -23,7 +23,6 @@
 #define VIEWER_H
 
 #include "FrameDrawer.h"
-#include "PointModelDrawer.h"
 #include "MapDrawer.h"
 #include "Tracking.h"
 #include "ORBSLAMSystem.h"
@@ -45,7 +44,7 @@ class PointModelDrawer;
 class Viewer
 {
 public:
-    Viewer(ark::ORBSLAMSystem* pSystem, FrameDrawer* pFrameDrawer, MapDrawer* pMapDrawer, PointModelDrawer* pPointModelDrawer, Tracking *pTracking, const string &strSettingPath);
+    Viewer(ark::ORBSLAMSystem* pSystem, FrameDrawer* pFrameDrawer, MapDrawer* pMapDrawer, Tracking *pTracking, const string &strSettingPath);
 
     // Main thread function. Draw points, keyframes, the current camera pose and the last processed
     // frame. Drawing is refreshed according to the camera fps. We use Pangolin.
@@ -68,7 +67,6 @@ private:
     ark::ORBSLAMSystem* mpSystem;
     FrameDrawer* mpFrameDrawer;
     MapDrawer* mpMapDrawer;
-    PointModelDrawer* mpPointModelDrawer;
     Tracking* mpTracker;
 
     // 1/fps in ms

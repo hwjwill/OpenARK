@@ -31,7 +31,6 @@
 #include "LocalMapping.h"
 #include "LoopClosing.h"
 #include "Frame.h"
-#include "FrameSelector.h"
 #include "ORBVocabulary.h"
 #include "KeyFrameDatabase.h"
 #include "ORBextractor.h"
@@ -65,7 +64,7 @@ namespace ORB_SLAM2 {
         Tracking(ark::ORBSLAMSystem *pSys, ark::KeyFrameAvailableHandler keyFrameHandler,
                  ark::FrameAvailableHandler frameHandler,
                  ORBVocabulary *pVoc, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer,
-                 FrameSelector *pFrameSelector, Map *pMap, KeyFrameDatabase *pKFDB, const string &strSettingPath,
+                 Map *pMap, KeyFrameDatabase *pKFDB, const string &strSettingPath,
                  const int sensor);
 
         // Preprocess the input and call Track(). Extract features and performs stereo matching.
@@ -183,7 +182,6 @@ namespace ORB_SLAM2 {
         //Other Thread Pointers
         LocalMapping *mpLocalMapper;
         LoopClosing *mpLoopClosing;
-        FrameSelector *mpFrameSelector;
 
         //ORB
         ORBextractor *mpORBextractorLeft, *mpORBextractorRight;
