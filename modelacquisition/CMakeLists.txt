@@ -7,8 +7,8 @@ ENDIF ()
 
 MESSAGE("Build type: " ${CMAKE_BUILD_TYPE})
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall  -O1 -march=native ")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O1 -march=native")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall  -O3 -march=native ")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3 -march=native")
 
 # Check C++11 or C++0x support
 include(CheckCXXCompilerFlag)
@@ -30,9 +30,9 @@ LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
 
 FIND_PACKAGE(octomap REQUIRED)
 INCLUDE_DIRECTORIES(${OCTOMAP_INCLUDE_DIRS})
-find_package(CUDA REQUIRED)
-SET(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-O3 -use_fast_math)
-include_directories(${CUDA_INCLUDE_DIRS})
+#find_package(CUDA REQUIRED)
+#SET(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-O3 -use_fast_math)
+#include_directories(${CUDA_INCLUDE_DIRS})
 find_package(PCL 1.8 REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})

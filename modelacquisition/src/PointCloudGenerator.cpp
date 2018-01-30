@@ -4,41 +4,13 @@
 
 #include <chrono>
 #include <mutex>
-#include <include/Utils.h>
+#include <Utils.h>
+#include <MathUtils.h>
 #include <pcl/filters/statistical_outlier_removal.h>
 #include <pcl/filters/fast_bilateral.h>
 #include "PointCloudGenerator.h"
 
-int frameid = 0;
-
-static rmd::SE3<float> convertPoseToRmd(cv::Mat& tcw){
-    float rot[6];
-    float tra[3];
-
-    rot[0] = tcw.at<float>(0, 0);
-    rot[1] = tcw.at<float>(0, 1);
-    rot[2] = tcw.at<float>(0, 2);
-    rot[3] = tcw.at<float>(1, 0);
-    rot[4] = tcw.at<float>(1, 1);
-    rot[5] = tcw.at<float>(1, 2);
-    rot[6] = tcw.at<float>(2, 0);
-    rot[7] = tcw.at<float>(2, 1);
-    rot[8] = tcw.at<float>(2, 2);
-
-    tra[0] = tcw.at<float>(0, 3);
-    tra[1] = tcw.at<float>(1, 3);
-    tra[2] = tcw.at<float>(2, 3);
-    rmd::SE3<float> T_world_curr(rot, tra);
-
-    return T_world_curr;
-}
-
-static float3 operator*(const rmd::SE3<float> &se3, const float3 &p)
-{
-    return se3.translate(se3.rotate(p));
-}
-
-namespace ark{
+namespace ark {
 
     PointCloudGenerator::PointCloudGenerator(std::string strSettingsFile) {
         cv::FileStorage fSettings(strSettingsFile, cv::FileStorage::READ);
@@ -52,7 +24,7 @@ namespace ark{
         depthfactor_ = fSettings["DepthMapFactor"];
         maxdepth_ = fSettings["MaxDepth"];
 
-        mOctomap = new octomap::ColorOcTree(0.01);
+        mOctomap = new octomap::ColorOcTree(0.006);
 
         mKeyFrame.frameId = -1;
         mbRequestStop = false;
@@ -76,20 +48,19 @@ namespace ark{
         return mbRequestStop;
     }
 
-    void PointCloudGenerator::Run(){
+    void PointCloudGenerator::Run() {
         ark::RGBDFrame currentKeyFrame;
-        while(true)
-        {
+        while (true) {
             {
                 std::unique_lock<std::mutex> lock(mRequestStopMutex);
-                if(mbRequestStop)
+                if (mbRequestStop)
                     break;
             }
 
 
             {
                 std::unique_lock<std::mutex> lock(mKeyFrameMutex);
-                if(currentKeyFrame.frameId==mKeyFrame.frameId)
+                if (currentKeyFrame.frameId == mKeyFrame.frameId)
                     continue;
                 mKeyFrame.imDepth.copyTo(currentKeyFrame.imDepth);
                 mKeyFrame.imRGB.copyTo(currentKeyFrame.imRGB);
@@ -99,23 +70,22 @@ namespace ark{
 
             cv::Mat Twc = mKeyFrame.mTcw.inv();
 
-            rmd::SE3<float> T_world_curr = convertPoseToRmd(Twc);
+//            rmd::SE3<float> T_world_curr = convertPoseToRmd(Twc);
 
-            Reproject(currentKeyFrame.imRGB, currentKeyFrame.imDepth, T_world_curr);
+            Reproject(currentKeyFrame.imRGB, currentKeyFrame.imDepth, Twc);
         }
     }
 
-    void PointCloudGenerator::Reproject(cv::Mat &imRGB, cv::Mat &imD, rmd::SE3<float> &T_world_ref) {
-        cv::imshow("Reprojected Frame", imRGB);
+    void PointCloudGenerator::Reproject(const cv::Mat &imRGB, const cv::Mat &imD, const cv::Mat &Twc) {
         pcl::PointCloud<PointType>::Ptr cloud(new pcl::PointCloud<PointType>);
         for (int y = 0; y < imD.rows; ++y) {
             for (int x = 0; x < imD.cols; ++x) {
-                const float3 f = make_float3(x, y, imD.at<float>(y, x));
-                if (imD.at<float>(y, x) > 0.0f && imD.at<float>(y,x) <maxdepth_) {
+                const cv::Vec3f f(x, y, imD.at<float>(y, x));
+                if (imD.at<float>(y, x) > 0.0f && imD.at<float>(y, x) < maxdepth_) {
                     PointType p;
-                    p.x = f.x;
-                    p.y = f.y;
-                    p.z = f.z;
+                    p.x = f[0];
+                    p.y = f[1];
+                    p.z = f[2];
                     const cv::Vec3b color = imRGB.at<cv::Vec3b>(y, x);
                     p.r = color[0];
                     p.g = color[1];
@@ -153,15 +123,24 @@ namespace ark{
             sor.setStddevMulThresh(0.1);
             sor.filter(*cloud_sor);
 
+            cv::Matx33f Rwc;
+            for (int i = 0; i < 3; ++i)
+                for (int j = 0; j < 3; ++j)
+                    Rwc(i, j) = Twc.at<float>(i, j);
+
+            cv::Vec3f twc;
+            for (int i = 0; i < 3; ++i)
+                twc[i] = Twc.at<float>(i, 3);
+
             pcl::PointCloud<PointType>::Ptr cloud_for_disp(new pcl::PointCloud<PointType>);
             for (auto p: cloud_sor->points) {
                 if (!std::isnan(p.x)) {
-                    const float3 f = make_float3((p.x - cx_) / fx_, (p.y - cy_) / fy_, 1.0f);
-                    const float3 xyz = T_world_ref * (f * p.z);
+                    const cv::Vec3f f((p.x - cx_) / fx_, (p.y - cy_) / fy_, 1.0f);
+                    const cv::Vec3f xyz = transform(Rwc, twc, f * p.z);
                     PointType p_disp;
-                    p_disp.x = xyz.x;
-                    p_disp.y = xyz.y;
-                    p_disp.z = xyz.z;
+                    p_disp.x = xyz[0];
+                    p_disp.y = xyz[1];
+                    p_disp.z = xyz[2];
                     p_disp.r = p.r;
                     p_disp.g = p.g;
                     p_disp.b = p.b;
@@ -171,13 +150,13 @@ namespace ark{
 
             octomap::Pointcloud cloud_octo;
             for (auto p:cloud_for_disp->points)
-                cloud_octo.push_back( p.x, p.y, p.z );
+                cloud_octo.push_back(p.x, p.y, p.z);
 
-            mOctomap->insertPointCloud( cloud_octo,
-                                   octomap::point3d( 0,0,0 ) );
+            mOctomap->insertPointCloud(cloud_octo,
+                                       octomap::point3d(0, 0, 0));
 
             for (auto p:cloud_for_disp->points)
-                mOctomap->integrateNodeColor( p.x, p.y, p.z, p.r, p.g, p.b );
+                mOctomap->integrateNodeColor(p.x, p.y, p.z, p.r, p.g, p.b);
 
         }
     }
@@ -188,7 +167,7 @@ namespace ark{
     }
 
     void PointCloudGenerator::OnKeyFrameAvailable(const RGBDFrame &keyFrame) {
-        if(mMapRGBDFrame.find(keyFrame.frameId)!=mMapRGBDFrame.end())
+        if (mMapRGBDFrame.find(keyFrame.frameId) != mMapRGBDFrame.end())
             return;
         std::unique_lock<std::mutex> lock(mKeyFrameMutex);
         keyFrame.mTcw.copyTo(mKeyFrame.mTcw);
@@ -200,11 +179,11 @@ namespace ark{
     }
 
     void PointCloudGenerator::OnFrameAvailable(const RGBDFrame &frame) {
-        std::cout << "OnFrameAvailable" << frame.frameId <<std::endl;
+        std::cout << "OnFrameAvailable" << frame.frameId << std::endl;
     }
 
     void PointCloudGenerator::OnLoopClosureDetected() {
-        std::cout << "LoopClosureDetected" <<std::endl;
+        std::cout << "LoopClosureDetected" << std::endl;
     }
 }
 

@@ -13,7 +13,6 @@
 #include <thread>
 #include <map>
 #include <pcl/io/pcd_io.h>
-#include "SE3.h"
 
 namespace ark{
 
@@ -41,7 +40,7 @@ namespace ark{
 
     private:
 
-        void Reproject(cv::Mat &imRGB, cv::Mat &imD, rmd::SE3<float> &T_world_ref);
+        void Reproject(const cv::Mat &imRGB,const cv::Mat &imD, const cv::Mat &Twc);
 
         //Main Loop thread
         std::thread *mptRun;
