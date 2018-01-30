@@ -36,7 +36,6 @@
 
 using namespace cv;
 using namespace std;
-typedef cv::Vec<uchar, 3> Vec3b;
 
 int main(int argc, char **argv) {
     if (argc != 3) {
@@ -47,11 +46,10 @@ int main(int argc, char **argv) {
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
     ark::PointCloudGenerator pointCloudGenerator(argv[2]);
-    ark::ORBSLAMSystem slam(argv[1], argv[2], ark::ORBSLAMSystem::RGBD, false);
+    ark::ORBSLAMSystem slam(argv[1], argv[2], ark::ORBSLAMSystem::RGBD, true);
     BridgeRSR200 bridgeRSR200;
 
-    slam.SetKeyFrameAvailableHandler([&pointCloudGenerator](const ark::RGBDFrame& keyFrame){return pointCloudGenerator.OnKeyFrameAvailable(keyFrame);});
-    slam.SetFrameAvailableHandler([&pointCloudGenerator](const ark::RGBDFrame& frame){return pointCloudGenerator.OnFrameAvailable(frame);});
+    slam.AddKeyFrameAvailableHandler([&pointCloudGenerator](const ark::RGBDFrame& keyFrame){return pointCloudGenerator.OnKeyFrameAvailable(keyFrame);}, "PointCloudFusion");
 
     slam.Start();
     pointCloudGenerator.Start();
@@ -73,14 +71,14 @@ int main(int argc, char **argv) {
             std::cout << "map changed" << std::endl;
         }
 
-        if(tframe++==500)
+        if(tframe++==1000)
         {
             slam.RequestStop();
             pointCloudGenerator.RequestStop();
         }
     }
 
-    pointCloudGenerator.SavePointCloud("tmp.pcd");
+    pointCloudGenerator.SaveOccupancyGrid("tmp.pcd");
 
     slam.ShutDown();
     pointCloudGenerator.ShutDown();

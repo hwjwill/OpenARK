@@ -52,17 +52,7 @@ namespace ark{
         depthfactor_ = fSettings["DepthMapFactor"];
         maxdepth_ = fSettings["MaxDepth"];
 
-        float v_g_o_x = fSettings["Voxel.Origin.x"];
-        float v_g_o_y = fSettings["Voxel.Origin.y"];
-        float v_g_o_z = fSettings["Voxel.Origin.z"];
-
-        float v_size = fSettings["Voxel.Size"];
-
-        float v_trunc_margin = fSettings["Voxel.TruncMargin"];
-
-        int v_g_d_x = fSettings["Voxel.Dim.x"];
-        int v_g_d_y = fSettings["Voxel.Dim.y"];
-        int v_g_d_z = fSettings["Voxel.Dim.z"];
+        mOctomap = new octomap::ColorOcTree(0.01);
 
         mKeyFrame.frameId = -1;
         mbRequestStop = false;
@@ -116,6 +106,7 @@ namespace ark{
     }
 
     void PointCloudGenerator::Reproject(cv::Mat &imRGB, cv::Mat &imD, rmd::SE3<float> &T_world_ref) {
+        cv::imshow("Reprojected Frame", imRGB);
         pcl::PointCloud<PointType>::Ptr cloud(new pcl::PointCloud<PointType>);
         for (int y = 0; y < imD.rows; ++y) {
             for (int x = 0; x < imD.cols; ++x) {
@@ -178,30 +169,38 @@ namespace ark{
                 }
             }
 
-            mOctree.addPoints(cloud_for_disp, cloud_for_disp->size());
-//            std::string filename;
-//            std::stringstream ss;
-//            ss << frameid++ << ".pcd";
-//            ss >>filename;
-//            pcl::io::savePCDFileBinary(filename, *cloud_for_disp);
+            octomap::Pointcloud cloud_octo;
+            for (auto p:cloud_for_disp->points)
+                cloud_octo.push_back( p.x, p.y, p.z );
+
+            mOctomap->insertPointCloud( cloud_octo,
+                                   octomap::point3d( 0,0,0 ) );
+
+            for (auto p:cloud_for_disp->points)
+                mOctomap->integrateNodeColor( p.x, p.y, p.z, p.r, p.g, p.b );
+
         }
     }
 
-    void PointCloudGenerator::SavePointCloud(std::string filename) {
-        pcl::io::savePCDFileBinary(filename, *mOctree.getPoints());
+    void PointCloudGenerator::SaveOccupancyGrid(std::string filename) {
+        mOctomap->updateInnerOccupancy();
+        mOctomap->write("tmp.ot");
     }
 
     void PointCloudGenerator::OnKeyFrameAvailable(const RGBDFrame &keyFrame) {
+        if(mMapRGBDFrame.find(keyFrame.frameId)!=mMapRGBDFrame.end())
+            return;
         std::unique_lock<std::mutex> lock(mKeyFrameMutex);
         keyFrame.mTcw.copyTo(mKeyFrame.mTcw);
         keyFrame.imRGB.copyTo(mKeyFrame.imRGB);
         keyFrame.imDepth.copyTo(mKeyFrame.imDepth);
 
         mKeyFrame.frameId = keyFrame.frameId;
+        mMapRGBDFrame[keyFrame.frameId] = ark::RGBDFrame();
     }
 
     void PointCloudGenerator::OnFrameAvailable(const RGBDFrame &frame) {
-//        std::cout << "OnFrameAvailable " << frame.frameId <<std::endl;
+        std::cout << "OnFrameAvailable" << frame.frameId <<std::endl;
     }
 
     void PointCloudGenerator::OnLoopClosureDetected() {

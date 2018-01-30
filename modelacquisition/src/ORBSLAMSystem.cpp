@@ -67,7 +67,7 @@ namespace ark {
 
         //Initialize the Tracking thread
         //(it will live in the main thread of execution, the one that called this constructor)
-        mpTracker = new ORB_SLAM2::Tracking(this, mKeyFrameAvailableHandler, mFrameAvailableHandler, mpVocabulary,
+        mpTracker = new ORB_SLAM2::Tracking(this, mMapKeyFrameAvailableHandler, mpVocabulary,
                                             mpFrameDrawer, mpMapDrawer, mpMap, mpKeyFrameDatabase, mStrSettingsFile, mSensor);
 
         //Initialize the Local Mapping thread and launch

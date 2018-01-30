@@ -24,6 +24,7 @@
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/features2d/features2d.hpp>
+#include <unordered_map>
 
 #include "Viewer.h"
 #include "FrameDrawer.h"
@@ -61,8 +62,7 @@ namespace ORB_SLAM2 {
     class Tracking {
 
     public:
-        Tracking(ark::ORBSLAMSystem *pSys, ark::KeyFrameAvailableHandler keyFrameHandler,
-                 ark::FrameAvailableHandler frameHandler,
+        Tracking(ark::ORBSLAMSystem *pSys, ark::MapKeyFrameAvailableHandler mapKeyFrameHandler,
                  ORBVocabulary *pVoc, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer,
                  Map *pMap, KeyFrameDatabase *pKFDB, const string &strSettingPath,
                  const int sensor);
@@ -173,8 +173,7 @@ namespace ORB_SLAM2 {
         bool mbVO;
 
         //Callback handlers
-        ark::KeyFrameAvailableHandler mKeyFrameAvailableHandler;
-        ark::FrameAvailableHandler mFrameAvailableHandler;
+        ark::MapKeyFrameAvailableHandler mMapKeyFrameAvailableHandler;
 
         //Current frame and keyFrame id
         long mnId, mnKeyId;

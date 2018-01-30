@@ -44,11 +44,10 @@ using namespace std;
 namespace ORB_SLAM2
 {
 
-Tracking::Tracking(ark::ORBSLAMSystem *pSys, ark::KeyFrameAvailableHandler keyFrameHandler,
-                   ark::FrameAvailableHandler frameHandler, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer,
+Tracking::Tracking(ark::ORBSLAMSystem *pSys, ark::MapKeyFrameAvailableHandler mapKeyFrameHandler,
+                   ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer,
                    Map *pMap, KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor):
-    mKeyFrameAvailableHandler(keyFrameHandler), mFrameAvailableHandler(frameHandler),
-    mState(NO_IMAGES_YET), mSensor(sensor), mbOnlyTracking(false), mbVO(false), mpORBVocabulary(pVoc),
+    mMapKeyFrameAvailableHandler(mapKeyFrameHandler), mState(NO_IMAGES_YET), mSensor(sensor), mbOnlyTracking(false), mbVO(false), mpORBVocabulary(pVoc),
     mpKeyFrameDB(pKFDB), mpInitializer(static_cast<Initializer*>(NULL)), mpSystem(pSys), mpViewer(NULL),
     mpFrameDrawer(pFrameDrawer), mpMapDrawer(pMapDrawer), mpMap(pMap), mnLastRelocFrameId(0)
 {
@@ -542,8 +541,11 @@ void Tracking::Track()
         keyFrame.imRGB = mCurrentFrame.mpReferenceKF->mImColor;
         keyFrame.mTcw = mCurrentFrame.mpReferenceKF->GetPose();
         mnKeyId = mCurrentFrame.mpReferenceKF->mnId;
-        mKeyFrameAvailableHandler(keyFrame);
-//        cv::imshow("KeyFrame",mCurrentFrame.mpReferenceKF->mImColor);
+        for(auto const handler:mMapKeyFrameAvailableHandler)
+        {
+            handler.second(keyFrame);
+        }
+
     }
 }
 

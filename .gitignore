@@ -36,8 +36,9 @@ modelacquisition/cmake-build-debug/
 modelacquisition/Thirdparty/DBoW2/build/
 modelacquisition/Thirdparty/g2o/build/
 modelacquisition/Thirdparty/TSDF/build/
-modelacquisition/lib/*.soi
+modelacquisition/lib/*.so
 modelacquisition/Examples/RGB-D/*.pcd
+modelacquisition/Examples/RGB-D/*.ot
 modelacquisition/Vocabulary/ORBvoc.txt
 # MSTest test Results
 [Tt]est[Rr]esult*/

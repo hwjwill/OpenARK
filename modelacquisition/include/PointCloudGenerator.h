@@ -6,12 +6,14 @@
 #define OPENARK_POINTCLOUDGENERATOR_H
 
 #include "Utils.h"
+#include <octomap/octomap.h>
+#include <octomap/ColorOcTree.h>
 #include <opencv2/opencv.hpp>
 #include <mutex>
 #include <thread>
+#include <map>
 #include <pcl/io/pcd_io.h>
 #include "SE3.h"
-#include "Octree.h"
 
 namespace ark{
 
@@ -35,7 +37,7 @@ namespace ark{
 
         void Run();
 
-        void SavePointCloud(std::string filename);
+        void SaveOccupancyGrid(std::string filename);
 
     private:
 
@@ -44,8 +46,11 @@ namespace ark{
         //Main Loop thread
         std::thread *mptRun;
 
-        //Octree of Global cloud
-        Octree mOctree;
+        //Octomap
+        octomap::ColorOcTree *mOctomap;
+
+        //RGBDFrame Map
+        std::map<int, ark::RGBDFrame> mMapRGBDFrame;
 
         //Current KeyFrame
         std::mutex mKeyFrameMutex;
