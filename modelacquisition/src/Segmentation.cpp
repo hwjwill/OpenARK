@@ -1,4 +1,5 @@
 #include "Segmentation.h"
+#define SHOULD_DOWN_SAMPLE 1 // 1 true, 0 false
 
 namespace ark {
 	void Segmentation::readPcd(std::string filepath, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud) {
@@ -75,10 +76,14 @@ namespace ark {
 		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_objs(new pcl::PointCloud<pcl::PointXYZRGBA>);
 
 		// Down sample the dataset.
-		pcl::VoxelGrid<pcl::PointXYZRGBA> vox;
-		vox.setInputCloud(cloud);
-		vox.setLeafSize(0.005f, 0.005f, 0.005f); // m
-		vox.filter(*cloud_filtered);
+		if (SHOULD_DOWN_SAMPLE == 1) {
+			pcl::VoxelGrid<pcl::PointXYZRGBA> vox;
+			vox.setInputCloud(cloud);
+			vox.setLeafSize(0.005f, 0.005f, 0.005f); // m
+			vox.filter(*cloud_filtered);
+		} else {
+			cloud_filtered = cloud;
+		}
 
 		// Statistical outlier removal
 		// TODO: should be handled in a sort of preprocessing stage
