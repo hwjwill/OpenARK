@@ -63,10 +63,6 @@ namespace ark {
 
         void Reset();
 
-        void SavePointCloud(string filename);
-
-        void SaveOccupancyGrid(string filename);
-
     private:
         //Location of vocabulary file and settings file
         string mStrVocFile;

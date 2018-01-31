@@ -79,6 +79,7 @@ int main(int argc, char **argv) {
     }
 
     pointCloudGenerator.SaveOccupancyGrid("tmp.pcd");
+    pointCloudGenerator.SavePly("tmp.ply");
 
     slam.ShutDown();
     pointCloudGenerator.ShutDown();

@@ -201,12 +201,4 @@ namespace ark {
         mbReset = true;
     }
 
-    void ORBSLAMSystem::SavePointCloud(string filename) {
-
-    }
-
-    void ORBSLAMSystem::SaveOccupancyGrid(string filename) {
-
-    }
-
 }

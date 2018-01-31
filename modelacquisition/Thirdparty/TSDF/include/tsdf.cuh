@@ -318,7 +318,7 @@ static void checkCUDA(const int lineNumber, cudaError_t status) {
     }
 }
 
-namespace OpenARK
+namespace ark
 {
 
 
