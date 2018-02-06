@@ -104,5 +104,5 @@ target_link_libraries(rgbd_realsense
         ${OCTOMAP_LIBRARIES}
         realsense
 #        ${PROJECT_SOURCE_DIR}/Thirdparty/TSDF/lib/libtsdf_cuda.so
-        ${CUDA_LIBRARIES})
+#        ${CUDA_LIBRARIES})
 
