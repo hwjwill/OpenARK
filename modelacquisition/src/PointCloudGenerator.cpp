@@ -37,9 +37,9 @@ namespace ark {
         int v_g_d_z = fSettings["Voxel.Dim.z"];
 
         mpOctomap = new octomap::ColorOcTree(fSettings["OctomapVoxel"]);
-        mpGpuTsdfGenerator = new GpuTsdfGenerator(width_,height_,fx_,fy_,cx_,cy_,
-                                                           v_g_o_x,v_g_o_y,v_g_o_z,v_size,
-                                                           v_trunc_margin,v_g_d_x,v_g_d_y,v_g_d_z);
+//        mpGpuTsdfGenerator = new GpuTsdfGenerator(width_,height_,fx_,fy_,cx_,cy_,
+//                                                           v_g_o_x,v_g_o_y,v_g_o_z,v_size,
+//                                                           v_trunc_margin,v_g_d_x,v_g_d_y,v_g_d_z);
 
         mKeyFrame.frameId = -1;
         mbRequestStop = false;
@@ -187,8 +187,8 @@ namespace ark {
             cam2base[14] = 0.0f;
             cam2base[15] = 1.0f;
 
-            mpGpuTsdfGenerator->processFrame((float *)imD_filtered.datastart, cam2base);
-            std::cout << "TSDF processed" << std::endl;
+//            mpGpuTsdfGenerator->processFrame((float *)imD_filtered.datastart, cam2base);
+//            std::cout << "TSDF processed" << std::endl;
 
         }
     }
@@ -199,7 +199,7 @@ namespace ark {
     }
 
     void PointCloudGenerator::SavePly(std::string filename) {
-        mpGpuTsdfGenerator->SavePLY(filename);
+        //mpGpuTsdfGenerator->SavePLY(filename);
     }
 
     void PointCloudGenerator::OnKeyFrameAvailable(const RGBDFrame &keyFrame) {

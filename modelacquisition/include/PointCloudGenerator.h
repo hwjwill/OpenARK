@@ -9,7 +9,7 @@
 #include <octomap/octomap.h>
 #include <octomap/ColorOcTree.h>
 
-#include <tsdf.cuh>
+//#include <tsdf.cuh>
 
 #include <mutex>
 #include <thread>
@@ -54,8 +54,8 @@ namespace ark{
         //Octomap
         octomap::ColorOcTree *mpOctomap;
 
-        //TSDF Generator
-        GpuTsdfGenerator *mpGpuTsdfGenerator;
+//        //TSDF Generator
+//        GpuTsdfGenerator *mpGpuTsdfGenerator;
 
         //RGBDFrame Map
         std::map<int, ark::RGBDFrame> mMapRGBDFrame;
