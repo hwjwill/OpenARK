@@ -34,6 +34,10 @@
 #include <BridgeRSR200.h>
 #include <PointCloudGenerator.h>
 
+// OpenARK libraries
+#include "version.h"
+#include "R200Camera.h"
+
 using namespace cv;
 using namespace std;
 
@@ -43,28 +47,32 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    DepthCamera *camera;
+    camera = new R200Camera();
+
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
     ark::PointCloudGenerator pointCloudGenerator(argv[2]);
     ark::ORBSLAMSystem slam(argv[1], argv[2], ark::ORBSLAMSystem::RGBD, true);
-    BridgeRSR200 bridgeRSR200;
+    //BridgeRSR200 bridgeRSR200;
 
     slam.AddKeyFrameAvailableHandler([&pointCloudGenerator](const ark::RGBDFrame& keyFrame){return pointCloudGenerator.OnKeyFrameAvailable(keyFrame);}, "PointCloudFusion");
 
     slam.Start();
     pointCloudGenerator.Start();
-    bridgeRSR200.Start();
+    //bridgeRSR200.Start();
 
     // Main loop
     int tframe = 1;
 
     while (!slam.IsRunning()) {
-        cv::Mat imRGB, imD;
+        //cv::Mat imRGB, imD;
 
-        bridgeRSR200.GrabRGBDPair(imRGB, imD);
+        //bridgeRSR200.GrabRGBDPair(imRGB, imD);
+        camera->nextFrame();
 
         // Pass the image to the SLAM system
-        slam.PushFrame(imRGB, imD, tframe);
+        slam.PushFrame(camera->getRGBImage(), camera->getDepthMap(), tframe);
 
         // check map changed
         if (slam.MapChanged()) {
