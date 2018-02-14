@@ -321,6 +321,8 @@ namespace ark {
         double contourCurvature(const std::vector<Point2i> & contour, int index,
             int start = 2, int end = 5);
 
+		cv::Point3f deproject(cv::Point2f pixelPoint, cv::Mat intrinsics, float depth);
+
         /**
          * Compares two points (Point, Point2f, Vec3i or Vec3f),
          * first by x, then y, then z (if available). Used for sorting points.

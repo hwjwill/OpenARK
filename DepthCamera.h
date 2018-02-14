@@ -1,6 +1,7 @@
 #pragma once
 
 #include "version.h"
+#include <time.h>
 
 // OpenCV Libraries
 #include <opencv2/objdetect/objdetect.hpp>
@@ -84,6 +85,9 @@ namespace ark {
          */
         const cv::Mat getFlagMap() const;
 
+		const cv::Mat getDepthMap() const;
+
+		const cv::Mat getIntrinsics() const;
         /**
          * Returns the width of the frame in pixels.
          */
@@ -140,6 +144,8 @@ namespace ark {
          * @return vector containing surface areas of clusters, in meters squared.
          */
         std::vector<double> getClusterAreas() const;
+
+		long int getTimeStamp() const;
 
         /*
          * Retrieve a list of objects visible in the current frame
@@ -220,6 +226,13 @@ namespace ark {
          * Matrix type CV_16U
          */
         cv::Mat irImage;
+
+		/**
+		 * Matrix type CV_16SC1
+		 */
+		cv::Mat depthMap;
+
+		cv::Mat intrinsics;
 
         /**
          * Stores the each individual cluster in its individual XYZMap. (Will be deleted)

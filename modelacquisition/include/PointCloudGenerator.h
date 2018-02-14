@@ -8,10 +8,14 @@
 #include "Utils.h"
 #include <octomap/octomap.h>
 #include <octomap/ColorOcTree.h>
-#include <opencv2/opencv.hpp>
+
+#include <tsdf.cuh>
+
 #include <mutex>
 #include <thread>
 #include <map>
+
+#include <opencv2/opencv.hpp>
 #include <pcl/io/pcd_io.h>
 
 namespace ark{
@@ -38,6 +42,8 @@ namespace ark{
 
         void SaveOccupancyGrid(std::string filename);
 
+        void SavePly(std::string filename);
+
     private:
 
         void Reproject(const cv::Mat &imRGB,const cv::Mat &imD, const cv::Mat &Twc);
@@ -46,7 +52,10 @@ namespace ark{
         std::thread *mptRun;
 
         //Octomap
-        octomap::ColorOcTree *mOctomap;
+        octomap::ColorOcTree *mpOctomap;
+
+        //TSDF Generator
+        GpuTsdfGenerator *mpGpuTsdfGenerator;
 
         //RGBDFrame Map
         std::map<int, ark::RGBDFrame> mMapRGBDFrame;

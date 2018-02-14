@@ -24,7 +24,22 @@ namespace ark {
         depthfactor_ = fSettings["DepthMapFactor"];
         maxdepth_ = fSettings["MaxDepth"];
 
-        mOctomap = new octomap::ColorOcTree(0.006);
+        float v_g_o_x = fSettings["Voxel.Origin.x"];
+        float v_g_o_y = fSettings["Voxel.Origin.y"];
+        float v_g_o_z = fSettings["Voxel.Origin.z"];
+
+        float v_size = fSettings["Voxel.Size"];
+
+        float v_trunc_margin = fSettings["Voxel.TruncMargin"];
+
+        int v_g_d_x = fSettings["Voxel.Dim.x"];
+        int v_g_d_y = fSettings["Voxel.Dim.y"];
+        int v_g_d_z = fSettings["Voxel.Dim.z"];
+
+        mpOctomap = new octomap::ColorOcTree(fSettings["OctomapVoxel"]);
+        mpGpuTsdfGenerator = new GpuTsdfGenerator(width_,height_,fx_,fy_,cx_,cy_,
+                                                           v_g_o_x,v_g_o_y,v_g_o_z,v_size,
+                                                           v_trunc_margin,v_g_d_x,v_g_d_y,v_g_d_z);
 
         mKeyFrame.frameId = -1;
         mbRequestStop = false;
@@ -69,8 +84,6 @@ namespace ark {
             }
 
             cv::Mat Twc = mKeyFrame.mTcw.inv();
-
-//            rmd::SE3<float> T_world_curr = convertPoseToRmd(Twc);
 
             Reproject(currentKeyFrame.imRGB, currentKeyFrame.imDepth, Twc);
         }
@@ -152,18 +165,41 @@ namespace ark {
             for (auto p:cloud_for_disp->points)
                 cloud_octo.push_back(p.x, p.y, p.z);
 
-            mOctomap->insertPointCloud(cloud_octo,
+            mpOctomap->insertPointCloud(cloud_octo,
                                        octomap::point3d(0, 0, 0));
 
             for (auto p:cloud_for_disp->points)
-                mOctomap->integrateNodeColor(p.x, p.y, p.z, p.r, p.g, p.b);
+                mpOctomap->integrateNodeColor(p.x, p.y, p.z, p.r, p.g, p.b);
+
+            cv::Mat imD_filtered(height_, width_, CV_32FC1);
+            memset(imD_filtered.datastart,0.0f,sizeof(float)*height_*width_);
+
+            for(auto p:cloud_sor->points)
+                if(!std::isnan(p.x))
+                    imD_filtered.at<float>(p.y,p.x) = p.z;
+
+            float cam2base[16];
+            for(int r=0;r<3;++r)
+                for(int c=0;c<4;++c)
+                    cam2base[r*4+c] = Twc.at<float>(r,c);
+            cam2base[12] = 0.0f;
+            cam2base[13] = 0.0f;
+            cam2base[14] = 0.0f;
+            cam2base[15] = 1.0f;
+
+            mpGpuTsdfGenerator->processFrame((float *)imD_filtered.datastart, cam2base);
+            std::cout << "TSDF processed" << std::endl;
 
         }
     }
 
     void PointCloudGenerator::SaveOccupancyGrid(std::string filename) {
-        mOctomap->updateInnerOccupancy();
-        mOctomap->write("tmp.ot");
+        mpOctomap->updateInnerOccupancy();
+        mpOctomap->write("tmp.ot");
+    }
+
+    void PointCloudGenerator::SavePly(std::string filename) {
+        mpGpuTsdfGenerator->SavePLY(filename);
     }
 
     void PointCloudGenerator::OnKeyFrameAvailable(const RGBDFrame &keyFrame) {

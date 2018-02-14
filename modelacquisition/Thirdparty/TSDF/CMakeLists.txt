@@ -1,0 +1,43 @@
+SET(PROJECT_NAME tdsf)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.3)
+PROJECT(${PROJECT_NAME})
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} CMakeModules)
+SET(CMAKE_BUILD_TYPE Release) # Release, RelWithDebInfo
+
+find_package(CUDA REQUIRED)
+SET(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-O3 -use_fast_math -std=c++11)
+
+SET(CUDA_PROPAGATE_HOST_FLAGS OFF)
+
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+IF(CMAKE_COMPILER_IS_GNUCC)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+ELSE()
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+ENDIF()
+
+find_package(OpenCV REQUIRED)
+
+set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
+
+include_directories(
+        ${OpenCV_INCLUDE_DIRS}
+	${PROJECT_SOURCE_DIR}/include
+)
+
+# Set link libraries
+list(APPEND LINK_LIBS
+        ${OpenCV_LIBS}
+        )
+
+# Set CUDA sourcefiles
+list(APPEND CU_SOURCE_FILES
+        ${PROJECT_SOURCE_DIR}/src/tsdf.cu
+        )
+
+
+CUDA_ADD_LIBRARY(
+        tsdf_cuda
+	SHARED
+        ${CU_SOURCE_FILES}
+)

@@ -30,9 +30,9 @@ LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
 
 FIND_PACKAGE(octomap REQUIRED)
 INCLUDE_DIRECTORIES(${OCTOMAP_INCLUDE_DIRS})
-#find_package(CUDA REQUIRED)
-#SET(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-O3 -use_fast_math)
-#include_directories(${CUDA_INCLUDE_DIRS})
+find_package(CUDA REQUIRED)
+SET(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-O3 -use_fast_math)
+include_directories(${CUDA_INCLUDE_DIRS})
 find_package(PCL 1.8 REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
@@ -92,7 +92,6 @@ target_link_libraries(${PROJECT_NAME}
         )
 
 # Build examples
-
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/RGB-D)
 
 add_executable(rgbd_realsense
