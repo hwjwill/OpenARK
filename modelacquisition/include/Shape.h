@@ -25,6 +25,14 @@ namespace ark {
 		* Destruct the Shape instance.
 		*/
 		~Shape();
+		
+		/**
+		* Generate mesh from point cloud.
+		* Mesh information will be stored in private members.
+		* @param [in] cloud the pointer to the input point cloud.
+		* @param [in] smooth_radius user-specified parameter for smoothing the point cloud, the larger the smoother.
+		*/
+		void generateMeshFromPtnCld(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, double smooth_radius);
 
 		/**
 		* Generate mesh from tsdf.

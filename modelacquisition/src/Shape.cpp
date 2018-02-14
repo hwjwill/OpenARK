@@ -11,6 +11,98 @@ namespace ark {
 
 	}
 
+	void Shaps::generateMeshFromPtnCld(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, double smooth_radius) {
+		// Denoise
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZRGB>);
+		pcl::StatisticalOutlierRemoval<pcl::PointXYZRGB> sor;
+		sor.setInputCloud(cloud);
+		sor.setMeanK(100);
+		sor.setStddevMulThresh(0.05);
+		sor.filter(*cloud_filtered);
+		// Translate to origin
+		pcl::CentroidPoint<pcl::PointXYZRGB> centroid;
+		for (int i = 0; i < cloud_filtered->points.size(); ++i)
+			centroid.add(cloud_filtered->points[i]);
+		pcl::PointXYZRGB pc;
+		centroid.get(pc);
+		Eigen::Matrix4f transform_mat = Eigen::Matrix4f::Identity();
+		transform_mat(0, 3) = -pc.x;
+		transform_mat(1, 3) = -pc.y;
+		transform_mat(2, 3) = -pc.z;
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_transformed(new pcl::PointCloud<pcl::PointXYZRGB>());
+		pcl::transformPointCloud(*cloud_filtered, *cloud_transformed, transform_mat);
+		/*========================== Mesh Generation Part Starts =======================*/
+		pcl::MovingLeastSquares<pcl::PointXYZRGB, pcl::PointXYZRGB> mls;
+		mls.setInputCloud(cloud_transformed);
+		mls.setSearchRadius(smoothRadius);
+		mls.setPolynomialFit(true);
+		mls.setPolynomialOrder(2);
+
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_smoothed(new pcl::PointCloud<pcl::PointXYZRGB>());
+		mls.process(*cloud_smoothed);
+
+		// Normal estimation*
+		pcl::NormalEstimationOMP<pcl::PointXYZRGB, pcl::Normal> n;
+		pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
+		pcl::search::KdTree<pcl::PointXYZRGB>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZRGB>);
+		tree->setInputCloud(cloud_smoothed);
+		n.setInputCloud(cloud_smoothed);
+		n.setSearchMethod(tree);
+		n.setKSearch(20);
+		n.compute(*normals);
+		//* normals should contain the point normals + surface curvatures
+
+		// Concatenate the XYZ and normal fields*
+		pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals(new pcl::PointCloud<pcl::PointNormal>);
+		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_smoothed_copy(new pcl::PointCloud<pcl::PointXYZ>);
+		pcl::copyPointCloud(*cloud_smoothed, *cloud_smoothed_copy);
+		pcl::concatenateFields(*cloud_smoothed_copy, *normals, *cloud_with_normals);
+
+		// Initialize objects
+		pcl::Poisson<pcl::PointNormal> poisson;
+		pcl::PolygonMesh mesh;
+		poisson.setDepth(6);
+		poisson.setInputCloud(cloud_with_normals);
+		poisson.reconstruct(mesh);
+
+		// Add color information
+		pcl::PointCloud<pcl::PointXYZ> cloudData;
+		pcl::fromPCLPointCloud2(mesh.cloud, cloudData);
+		for (size_t i = 0; i < cloudData.points.size(); ++i) {
+			pcl::PointXYZRGB p;
+			p.x = cloudData.points[i].x;
+			p.y = cloudData.points[i].y;
+			p.z = cloudData.points[i].z;
+			/* Edit this part to get true texture of the mesh */
+			/*================================================*/
+			double dis = DBL_MAX;
+			int idx = 0;
+			for (size_t j = 0; j < cloud_smoothed->points.size(); ++j) {
+				double d = sqrt((p.x - cloud_smoothed->points[j].x) * (p.x - cloud_smoothed->points[j].x)
+					+ (p.y - cloud_smoothed->points[j].y) * (p.y - cloud_smoothed->points[j].y)
+					+ (p.z - cloud_smoothed->points[j].z) * (p.z - cloud_smoothed->points[j].z));
+				if (dis > d) {
+					dis = d;
+					idx = j;
+				}
+			}
+			p.r = cloud_smoothed->points[idx].r;
+			p.g = cloud_smoothed->points[idx].g;
+			p.b = cloud_smoothed->points[idx].b;
+			/*================================================*/
+			vertices.push_back(p);
+		}
+		for (auto f : mesh.polygons) {
+			Face f_new;
+			f_new.vertex_idx[0] = f.vertices[0];
+			f_new.vertex_idx[1] = f.vertices[1];
+			f_new.vertex_idx[2] = f.vertices[2];
+			faces.push_back(f_new);
+		}
+		/*========================== Mesh Generation Part Ends =========================*/
+		return;
+	}
+	
 	void Shape::generateMeshFromTSDF(TSDFData input_tsdf) {
 		int total_size = input_tsdf.voxel_grid_dim[0] * input_tsdf.voxel_grid_dim[1] * input_tsdf.voxel_grid_dim[2];
 		std::unordered_map<std::string, int> vertices_idx;
@@ -107,6 +199,9 @@ namespace ark {
 						t.p[pi].x = t.p[pi].x * input_tsdf.voxel_size + input_tsdf.voxel_grid_origin[0];
 						t.p[pi].y = t.p[pi].y * input_tsdf.voxel_size + input_tsdf.voxel_grid_origin[1];
 						t.p[pi].z = t.p[pi].z * input_tsdf.voxel_size + input_tsdf.voxel_grid_origin[2];
+						t.p[pi].r = 255;
+						t.p[pi].g = 255;
+						t.p[pi].b = 255;
 						vertices.push_back(t.p[pi]);
 					}
 					else
@@ -123,11 +218,11 @@ namespace ark {
 		ply_file.open(output_file_name);
 		ply_file << "ply\nformat ascii 1.0\ncomment stanford bunny\nelement vertex ";
 		ply_file << vertices.size() << "\n";
-		ply_file << "property float x\nproperty float y\nproperty float z\n";// property uchar red\nproperty uchar green\nproperty uchar blue\n";
+		ply_file << "property float x\nproperty float y\nproperty float z\nproperty uchar red\nproperty uchar green\nproperty uchar blue\n";
 		ply_file << "element face " << faces.size() << "\n";
 		ply_file << "property list int int vertex_index\nend_header\n";
 		for (auto v : vertices) {
-			ply_file << v.x << " " << v.y << " " << v.z << /*" " << (int)c.r << " " << (int)c.g << " " << (int)c.b <<*/ "\n";
+			ply_file << v.x << " " << v.y << " " << v.z << " " << (int)v.r << " " << (int)v.g << " " << (int)v.b << "\n";
 		}
 		for (auto f : faces) {
 			ply_file << "3 " << f.vertex_idx[0] << " " << f.vertex_idx[1] << " " << f.vertex_idx[2] << "\n";
