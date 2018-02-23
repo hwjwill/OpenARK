@@ -108,11 +108,9 @@ namespace ark {
 		std::unordered_map<std::string, int> vertices_idx;
 		int vertex_count = 0;
 		for (size_t i = 0; i < total_size; ++i) {
-			if (i % 10000000 == 0)
-				cout << i << " ";
-			int xi = i / (input_tsdf.voxel_grid_dim[1] * input_tsdf.voxel_grid_dim[2]);
-			int yi = (i - xi * input_tsdf.voxel_grid_dim[1] * input_tsdf.voxel_grid_dim[2]) / input_tsdf.voxel_grid_dim[2];
-			int zi = i - xi * input_tsdf.voxel_grid_dim[1] * input_tsdf.voxel_grid_dim[2] - yi * input_tsdf.voxel_grid_dim[2];
+			int zi = i / (input_tsdf.voxel_grid_dim[0] * input_tsdf.voxel_grid_dim[1]);
+			int yi = (i - zi * input_tsdf.voxel_grid_dim[0] * input_tsdf.voxel_grid_dim[1]) / input_tsdf.voxel_grid_dim[0];
+			int xi = i - zi * input_tsdf.voxel_grid_dim[0] * input_tsdf.voxel_grid_dim[1] - yi * input_tsdf.voxel_grid_dim[0];
 			if (xi == input_tsdf.voxel_grid_dim[0] - 1 || yi == input_tsdf.voxel_grid_dim[1] - 1 || zi == input_tsdf.voxel_grid_dim[2] - 1)
 				continue;
 			GridCell grid;
@@ -125,14 +123,14 @@ namespace ark {
 			grid.p[6] = pcl::PointXYZRGB(xi + 1, yi + 1, zi + 1);
 			grid.p[7] = pcl::PointXYZRGB(xi + 1, yi, zi + 1);
 
-			grid.val[0] = input_tsdf.tsdf[xi * input_tsdf.voxel_grid_dim[1] * input_tsdf.voxel_grid_dim[2] + yi * input_tsdf.voxel_grid_dim[2] + zi];
-			grid.val[1] = input_tsdf.tsdf[xi * input_tsdf.voxel_grid_dim[1] * input_tsdf.voxel_grid_dim[2] + (yi + 1) * input_tsdf.voxel_grid_dim[2] + zi];
-			grid.val[2] = input_tsdf.tsdf[(xi + 1) * input_tsdf.voxel_grid_dim[1] * input_tsdf.voxel_grid_dim[2] + (yi + 1) * input_tsdf.voxel_grid_dim[2] + zi];
-			grid.val[3] = input_tsdf.tsdf[(xi + 1) * input_tsdf.voxel_grid_dim[1] * input_tsdf.voxel_grid_dim[2] + yi * input_tsdf.voxel_grid_dim[2] + zi];
-			grid.val[4] = input_tsdf.tsdf[xi * input_tsdf.voxel_grid_dim[1] * input_tsdf.voxel_grid_dim[2] + yi * input_tsdf.voxel_grid_dim[2] + (zi + 1)];
-			grid.val[5] = input_tsdf.tsdf[xi * input_tsdf.voxel_grid_dim[1] * input_tsdf.voxel_grid_dim[2] + (yi + 1) * input_tsdf.voxel_grid_dim[2] + (zi + 1)];
-			grid.val[6] = input_tsdf.tsdf[(xi + 1) * input_tsdf.voxel_grid_dim[1] * input_tsdf.voxel_grid_dim[2] + (yi + 1) * input_tsdf.voxel_grid_dim[2] + (zi + 1)];
-			grid.val[7] = input_tsdf.tsdf[(xi + 1) * input_tsdf.voxel_grid_dim[1] * input_tsdf.voxel_grid_dim[2] + yi * input_tsdf.voxel_grid_dim[2] + (zi + 1)];
+			grid.val[0] = input_tsdf.tsdf[zi * input_tsdf.voxel_grid_dim[0] * input_tsdf.voxel_grid_dim[1] + yi * input_tsdf.voxel_grid_dim[0] + xi];
+			grid.val[1] = input_tsdf.tsdf[zi * input_tsdf.voxel_grid_dim[0] * input_tsdf.voxel_grid_dim[1] + (yi + 1) * input_tsdf.voxel_grid_dim[0] + xi];
+			grid.val[2] = input_tsdf.tsdf[zi * input_tsdf.voxel_grid_dim[0] * input_tsdf.voxel_grid_dim[1] + (yi + 1) * input_tsdf.voxel_grid_dim[0] + (xi + 1)];
+			grid.val[3] = input_tsdf.tsdf[zi * input_tsdf.voxel_grid_dim[0] * input_tsdf.voxel_grid_dim[1] + yi * input_tsdf.voxel_grid_dim[0] + (xi + 1)];
+			grid.val[4] = input_tsdf.tsdf[(zi + 1) * input_tsdf.voxel_grid_dim[0] * input_tsdf.voxel_grid_dim[1] + yi * input_tsdf.voxel_grid_dim[0] + xi];
+			grid.val[5] = input_tsdf.tsdf[(zi + 1) * input_tsdf.voxel_grid_dim[0] * input_tsdf.voxel_grid_dim[1] + (yi + 1) * input_tsdf.voxel_grid_dim[0] + xi];
+			grid.val[6] = input_tsdf.tsdf[(zi + 1) * input_tsdf.voxel_grid_dim[0] * input_tsdf.voxel_grid_dim[1] + (yi + 1) * input_tsdf.voxel_grid_dim[0] + (xi + 1)];
+			grid.val[7] = input_tsdf.tsdf[(zi + 1) * input_tsdf.voxel_grid_dim[0] * input_tsdf.voxel_grid_dim[1] + yi * input_tsdf.voxel_grid_dim[0] + (xi + 1)];
 			int cubeIndex = 0;
 			if (grid.val[0] < 0) cubeIndex |= 1;
 			if (grid.val[1] < 0) cubeIndex |= 2;
